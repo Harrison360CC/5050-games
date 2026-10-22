@@ -5,10 +5,22 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node",
+      "@cloudflare/workers-types"
+    ],
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src", "worker", "test", "scripts"]
+  "include": [
+    "src",
+    "functions",
+    "test",
+    "scripts"
+  ]
 }

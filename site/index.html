@@ -66,6 +66,10 @@
   .who input { position: absolute; opacity: 0; width: 0; height: 0; }
   .sheet textarea { font: inherit; padding: 10px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); resize: vertical; }
   .muted { color: var(--muted); }
+  .oauth { font: inherit; font-weight: 700; padding: 11px; background: var(--bg); color: var(--ink); border: 1px solid var(--ink); cursor: pointer; }
+  .or { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: center; }
+  .toast { font-family: var(--mono); font-size: 13px; padding: 8px 12px; background: var(--ink); color: var(--bg); }
+  .toast[hidden] { display: none; }
   .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { flex: 0 0 auto; font-family: var(--mono); font-size: 13px; font-weight: 600; padding: 8px 12px; border: 1px solid var(--rule); background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; }
@@ -120,8 +124,9 @@
     <button class="tab" role="tab" aria-selected="false" data-g="slumlord">Slumlord <span class="chip-pot"></span></button>
   </div>
 
+  <div class="toast" id="status" hidden></div>
   <div class="pot" id="pot">
-    <div class="n">$25.00<small>est.</small></div>
+    <div class="n">$0.00<small>est.</small></div>
     <div class="l">this week's pot · top score Sunday night takes it</div>
   </div>
 
@@ -163,12 +168,21 @@
   <form id="signin" class="sheet" hidden>
     <div class="sheet-in">
       <button type="button" class="close" aria-label="close">×</button>
-      <h3>Ranked needs an email.</h3>
-      <p>So we know who to pay. That's the whole reason. No newsletter unless you ask for one.</p>
-      <label for="email">Email</label>
-      <input id="email" type="email" required autocomplete="email" placeholder="you@wherever.com">
-      <label class="chk"><input id="adult" type="checkbox" required> I'm 18 or older (19 where that's the age of majority). I know Quebec can play but isn't eligible for the pot.</label>
-      <button type="submit" class="go">Send me a link</button>
+      <div class="step-login">
+        <h3>Ranked needs an account.</h3>
+        <p>So we know who to pay. That's the whole reason. No newsletter unless you ask for one.</p>
+        <button type="button" class="oauth" id="g-google">Continue with Google</button>
+        <button type="button" class="oauth" id="g-discord">Continue with Discord</button>
+        <div class="or">or a link by email</div>
+        <input id="email" type="email" required autocomplete="email" placeholder="you@wherever.com">
+        <button type="submit" class="go">Send me a link</button>
+      </div>
+      <div class="step-adult" hidden>
+        <h3>One more thing.</h3>
+        <p>Money changes hands here, so this part is real.</p>
+        <label class="chk"><input id="adult" type="checkbox" required> I'm 18 or older (19 where that's the age of majority). I know Quebec can play but isn't eligible for the pot, and I'll show ID once if I win.</label>
+        <button type="button" class="go" id="adult-ok">Let me in</button>
+      </div>
     </div>
   </form>
 

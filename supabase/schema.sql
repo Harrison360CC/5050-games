@@ -65,3 +65,13 @@ create policy "insert own profile" on public.profiles for insert with check (aut
 create policy "read verified runs" on public.runs for select using (score is not null);
 create policy "read weeks" on public.weeks for select using (true);
 -- no insert/update policies on runs or weeks for anon/authenticated: service role only.
+
+-- complaints from the site. no auto-email; read them in the dashboard.
+create table if not exists public.complaints (
+  id uuid primary key default gen_random_uuid(),
+  who text check (who in ('karen','chad')),
+  email text not null,
+  body text not null check (length(body) <= 2000),
+  created_at timestamptz not null default now()
+);
+alter table public.complaints enable row level security;

@@ -1,6 +1,0 @@
-name = "play5050-api"
-main = "worker/index.ts"
-compatibility_date = "2026-10-01"
-
-# Set secrets with: wrangler secret put SUPABASE_URL / SUPABASE_SERVICE_KEY
-# Route: api.play5050games.com/* once the zone is on Cloudflare
