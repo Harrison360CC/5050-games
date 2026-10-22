@@ -1,0 +1,140 @@
+import { PIGEON, WORLD_H, WORLD_W, type PigeonState } from "../../sim/pigeon";
+
+const C = {
+  sky: "#1b1f2a",
+  sky2: "#2a3042",
+  bldg: "#11141c",
+  bldgLit: "#f2c14e",
+  ground: "#3b2f2f",
+  groundTop: "#5a4a3a",
+  pigeon: "#8d99ae",
+  pigeonDark: "#5c667a",
+  beak: "#f4a261",
+  eye: "#0b0d12",
+  red: "#e63946",
+  text: "#f8f9fa",
+};
+
+const DEATH_LINES = ["splat.", "the pigeon has had enough.", "while they're out partying btw.", "my reaction to that: nothing.", "i'm so sorry.", "write it down. scrib doon."];
+
+export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: number, hud: { best: number; started: boolean; seed: number }) {
+  ctx.save();
+  ctx.scale(scale, scale);
+
+  // sky
+  const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+  g.addColorStop(0, C.sky);
+  g.addColorStop(1, C.sky2);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+  // background buildings (parallax, derived from tick so it's cheap)
+  ctx.fillStyle = "#151924";
+  const off = (s.tick * 0.6) % 120;
+  for (let i = -1; i < 5; i++) {
+    const x = i * 120 - off;
+    const h = 160 + ((i * 37) % 90);
+    ctx.fillRect(x, PIGEON.GROUND_Y - h, 80, h);
+  }
+
+  // obstacle columns = buildings
+  for (const gp of s.gaps) {
+    ctx.fillStyle = C.bldg;
+    ctx.fillRect(gp.x, 0, PIGEON.COL_W, gp.gapY);
+    ctx.fillRect(gp.x, gp.gapY + gp.gapH, PIGEON.COL_W, PIGEON.GROUND_Y - gp.gapY - gp.gapH);
+    // lit windows
+    ctx.fillStyle = C.bldgLit;
+    for (let y = 14; y < gp.gapY - 10; y += 22) {
+      ctx.fillRect(gp.x + 10, y, 8, 10);
+      ctx.fillRect(gp.x + 32, y, 8, 10);
+    }
+    for (let y = gp.gapY + gp.gapH + 14; y < PIGEON.GROUND_Y - 10; y += 22) {
+      ctx.fillRect(gp.x + 10, y, 8, 10);
+      ctx.fillRect(gp.x + 32, y, 8, 10);
+    }
+    // ledge edges
+    ctx.fillStyle = C.red;
+    ctx.fillRect(gp.x - 3, gp.gapY - 6, PIGEON.COL_W + 6, 6);
+    ctx.fillRect(gp.x - 3, gp.gapY + gp.gapH, PIGEON.COL_W + 6, 6);
+  }
+
+  // ground
+  ctx.fillStyle = C.groundTop;
+  ctx.fillRect(0, PIGEON.GROUND_Y, WORLD_W, 6);
+  ctx.fillStyle = C.ground;
+  ctx.fillRect(0, PIGEON.GROUND_Y + 6, WORLD_W, WORLD_H - PIGEON.GROUND_Y);
+
+  // pigeon
+  const px = PIGEON.PIGEON_X;
+  const py = s.y;
+  const tilt = Math.max(-0.5, Math.min(0.9, s.vy * 0.08)) + s.wobble * 0.3;
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(tilt);
+  ctx.fillStyle = C.pigeon;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 16, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // wing
+  ctx.fillStyle = C.pigeonDark;
+  const flap = s.vy < -2 ? -6 : 3;
+  ctx.beginPath();
+  ctx.ellipse(-3, flap, 9, 5, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  // head
+  ctx.fillStyle = C.pigeon;
+  ctx.beginPath();
+  ctx.arc(12, -6, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = C.beak;
+  ctx.beginPath();
+  ctx.moveTo(18, -6);
+  ctx.lineTo(25, -4);
+  ctx.lineTo(18, -2);
+  ctx.fill();
+  ctx.fillStyle = C.eye;
+  ctx.beginPath();
+  ctx.arc(14, -8, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  // drunk X eye when dead
+  if (s.dead) {
+    ctx.strokeStyle = C.red;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(11, -11); ctx.lineTo(17, -5);
+    ctx.moveTo(17, -11); ctx.lineTo(11, -5);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // HUD
+  ctx.fillStyle = C.text;
+  ctx.textAlign = "center";
+  ctx.font = "bold 48px system-ui, sans-serif";
+  ctx.fillText(String(s.score), WORLD_W / 2, 80);
+  ctx.font = "14px system-ui, sans-serif";
+  ctx.fillStyle = "rgba(248,249,250,0.6)";
+  ctx.fillText(`best ${hud.best}`, WORLD_W / 2, 102);
+
+  if (!hud.started) {
+    ctx.fillStyle = C.text;
+    ctx.font = "bold 22px system-ui, sans-serif";
+    ctx.fillText("DRUNK PIGEON", WORLD_W / 2, 300);
+    ctx.font = "15px system-ui, sans-serif";
+    ctx.fillStyle = "rgba(248,249,250,0.8)";
+    ctx.fillText("tap to flap. it gets worse.", WORLD_W / 2, 326);
+  }
+  if (s.dead) {
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(40, 240, WORLD_W - 80, 140);
+    ctx.fillStyle = C.text;
+    ctx.font = "bold 24px system-ui, sans-serif";
+    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, WORLD_W / 2, 285);
+    ctx.font = "15px system-ui, sans-serif";
+    ctx.fillStyle = "rgba(248,249,250,0.8)";
+    ctx.fillText(`${s.score} gaps. tap to go again.`, WORLD_W / 2, 315);
+    ctx.fillText(`${(s.tick / 60).toFixed(1)}s of flying, ${s.gaps.length} buildings`, WORLD_W / 2, 340);
+  }
+
+  ctx.restore();
+}

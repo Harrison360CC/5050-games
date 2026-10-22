@@ -1,0 +1,202 @@
+<title>5050 Games</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@700&display=swap">
+<style>
+  /* Layout: one-screen app. Tabs on top, pot line, game, top 3. Nothing else on this page. */
+  :root {
+    --bg: #161615; --surface: #222221; --ink: #ECEAE4; --muted: #A5A29B; --rule: #3B3A37;
+    --accent: #FF8B2E; --on-accent: #161615;
+    --body: "Atkinson Hyperlegible Next", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --pixel: "Silkscreen", monospace;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #EDEBE6; --surface: #FAF9F6; --ink: #1A1A1A; --muted: #5F5D58; --rule: #C6C3BC; --accent: #F26B0A; --on-accent: #1A1A1A; color-scheme: light; }
+  }
+  :root[data-theme="light"] { --bg: #EDEBE6; --surface: #FAF9F6; --ink: #1A1A1A; --muted: #5F5D58; --rule: #C6C3BC; --accent: #F26B0A; --on-accent: #1A1A1A; color-scheme: light; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.4;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 24px;
+  }
+  .app { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; padding-block: 12px 4px; }
+  .wm { font-family: var(--pixel); font-size: 20px; color: var(--ink); text-decoration: none; }
+  .wm b { color: var(--accent); }
+  .links { display: flex; gap: 14px; font-family: var(--mono); font-size: 12px; }
+  .links a { color: var(--muted); text-decoration: none; }
+
+  .nav { display: flex; border-bottom: 1px solid var(--rule); }
+  .nav-b { flex: 1; font-family: var(--body); font-size: 15px; font-weight: 700; padding: 10px 4px; background: transparent; color: var(--muted); border: 0; border-bottom: 3px solid transparent; cursor: pointer; margin-bottom: -1px; }
+  .nav-b[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .nav-b:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  section { display: flex; flex-direction: column; gap: 12px; }
+  section[hidden] { display: none; }
+  .panel { display: flex; flex-direction: column; gap: 12px; }
+  .screen-ph { background: #0f1116; border: 1px solid var(--rule); min-height: 320px; display: flex; justify-content: center; align-items: center; }
+  .shop { border: 1px solid var(--rule); background: var(--surface); }
+  .item { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
+  .item:last-child { border-bottom: 0; }
+  .item .sw { width: 44px; height: 44px; background: var(--bg); border: 1px solid var(--rule); }
+  .item b { display: block; }
+  .item span { font-size: 13px; color: var(--muted); }
+  .item .soon { font-family: var(--mono); font-size: 12px; }
+  .chip-pot { font-weight: 500; opacity: .75; margin-left: 4px; }
+  .tab[aria-selected="true"] .chip-pot { opacity: .85; }
+  .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  #podscreen { position: relative; min-height: 360px; }
+  #podscreen canvas { margin: auto; }
+  .fakead { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); color: #ECEAE4; font-family: var(--mono); font-size: 18px; }
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 20; margin: 0; }
+  .sheet[hidden] { display: none; }
+  .sheet-in { width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--rule); padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; position: relative; }
+  .sheet h3 { margin: 0; font-size: 20px; }
+  .sheet p { margin: 0; color: var(--muted); font-size: 14px; }
+  .sheet label { font-size: 13px; color: var(--muted); }
+  .sheet input[type=email] { font: inherit; padding: 10px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+  .sheet .chk { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
+  .sheet .go { font-family: var(--mono); font-weight: 600; font-size: 14px; padding: 11px; background: var(--accent); color: var(--on-accent); border: 0; cursor: pointer; }
+  .sheet .close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; }
+  .who { display: flex; border: 1px solid var(--rule); }
+  .who label { flex: 1; text-align: center; padding: 8px; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .who label:has(input:checked) { background: var(--ink); color: var(--bg); }
+  .who input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .sheet textarea { font: inherit; padding: 10px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); resize: vertical; }
+  .muted { color: var(--muted); }
+  .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; font-family: var(--mono); font-size: 13px; font-weight: 600; padding: 8px 12px; border: 1px solid var(--rule); background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .pot { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--rule); }
+  .pot .n { font-family: var(--mono); font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .pot .n small { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .pot .l { font-size: 13px; color: var(--muted); text-align: right; min-width: 0; }
+
+  .mode { display: flex; border: 1px solid var(--rule); }
+  .mode button { flex: 1; font-family: var(--mono); font-size: 13px; font-weight: 600; padding: 9px; background: var(--surface); color: var(--muted); border: 0; cursor: pointer; }
+  .mode button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+  .mode button:focus-visible { outline: 2px solid var(--ink); outline-offset: -3px; }
+
+  #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: 70vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+  #screen canvas { border-radius: 0 !important; }
+  .placeholder { color: #A5A29B; font-family: var(--mono); font-size: 13px; text-align: center; padding: 24px; }
+  .placeholder b { display: block; font-family: var(--body); font-size: 20px; color: #ECEAE4; margin-bottom: 6px; }
+
+  .board { border: 1px solid var(--rule); background: var(--surface); }
+  .board h2 { margin: 0; padding: 8px 12px; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; }
+  .board ol { margin: 0; padding: 0; list-style: none; }
+  .board li { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; align-items: baseline; }
+  .board li:last-child { border-bottom: 0; }
+  .board li .rank { font-family: var(--mono); color: var(--muted); }
+  .board li .score { font-family: var(--mono); font-weight: 600; }
+  .board li.you .rank { color: var(--accent); }
+  .board .empty { padding: 12px; color: var(--muted); font-size: 14px; }
+  .foot { font-size: 12px; color: var(--muted); font-family: var(--mono); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .foot a { color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <div class="top">
+    <a class="wm" href="#">50<b>/</b>50</a>
+    <div class="links"><a href="#ledger">ledger</a><a href="#rules">rules</a><a href="#" id="signin-link">sign in</a></div>
+  </div>
+
+  <nav class="nav" role="tablist">
+    <button class="nav-b" role="tab" aria-selected="true" data-s="games">Games</button>
+    <button class="nav-b" role="tab" aria-selected="false" data-s="pod">Loyalty Center</button>
+    <button class="nav-b" role="tab" aria-selected="false" data-s="shop">Shop</button>
+  </nav>
+
+  <section id="s-games">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-g="pigeon">Drunk Pigeon <span class="chip-pot"></span></button>
+    <button class="tab" role="tab" aria-selected="false" data-g="rent">Rent's Due <span class="chip-pot"></span></button>
+    <button class="tab" role="tab" aria-selected="false" data-g="slumlord">Slumlord <span class="chip-pot"></span></button>
+  </div>
+
+  <div class="pot" id="pot">
+    <div class="n">$25.00<small>est.</small></div>
+    <div class="l">this week's pot · top score Sunday night takes it</div>
+  </div>
+
+  <div class="mode" id="mode">
+    <button aria-pressed="true" data-m="practice">Practice</button>
+    <button aria-pressed="false" data-m="ranked">Ranked</button>
+  </div>
+
+  <div id="screen"></div>
+
+  <div class="board" id="board">
+    <h2><span>Top 3 this week</span><span id="wk">wk 44 · closes Sun 23:59 UTC</span></h2>
+    <ol id="top"></ol>
+    <div class="empty" id="empty">Nobody has scored yet. Technically, zero is winning.</div>
+  </div>
+
+  </section>
+
+  <section id="s-pod" hidden>
+    <div class="panel">
+      <div class="pot"><div class="n">&nbsp;</div><div class="l">no pot in here. just pods.</div></div>
+      <div id="podscreen" class="screen-ph"></div>
+      <p class="hint">Tap to walk. Walk into a pod, watch an ad, get a hat. The hat does nothing. Three a day, then they close for the night.</p>
+    </div>
+  </section>
+
+  <section id="s-shop" hidden>
+    <div class="panel">
+      <div class="pot"><div class="n">50%</div><div class="l">of every item's profit goes into that game's pot</div></div>
+      <div class="shop">
+        <div class="item"><div class="sw"></div><div><b>Drunk Pigeon</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
+        <div class="item"><div class="sw"></div><div><b>Rent's Due</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
+        <div class="item"><div class="sw"></div><div><b>Slumlord</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
+        <div class="item"><div class="sw"></div><div><b>5050 house</b><span>the logo on things</span></div><span class="soon">soon</span></div>
+      </div>
+    </div>
+  </section>
+
+  <form id="signin" class="sheet" hidden>
+    <div class="sheet-in">
+      <button type="button" class="close" aria-label="close">×</button>
+      <h3>Ranked needs an email.</h3>
+      <p>So we know who to pay. That's the whole reason. No newsletter unless you ask for one.</p>
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="email" placeholder="you@wherever.com">
+      <label class="chk"><input id="adult" type="checkbox" required> I'm 18 or older (19 where that's the age of majority). I know Quebec can play but isn't eligible for the pot.</label>
+      <button type="submit" class="go">Send me a link</button>
+    </div>
+  </form>
+
+  <form id="complain" class="sheet" hidden>
+    <div class="sheet-in">
+      <button type="button" class="close" aria-label="close">×</button>
+      <h3>Complaints.</h3>
+      <p>There is no contact form. There is this.</p>
+      <div class="who" role="radiogroup" aria-label="You are">
+        <label><input type="radio" name="who" value="karen" checked> Karen</label>
+        <label><input type="radio" name="who" value="chad"> Chad</label>
+      </div>
+      <label for="cemail">Email, so we can reply</label>
+      <input id="cemail" type="email" required autocomplete="email" placeholder="you@wherever.com">
+      <label for="cbody" id="clabel">What's the problem</label>
+      <textarea id="cbody" rows="4" required placeholder="I would like to speak to the manager."></textarea>
+      <button type="submit" class="go" id="cgo">Speak to the manager</button>
+      <p id="cdone" class="muted" hidden></p>
+    </div>
+  </form>
+
+  <div class="foot">
+    <span>free, nothing to put in</span>
+    <a href="#rules">rules</a>
+    <a href="#privacy">privacy</a>
+    <a href="#ledger">every payout, ever</a>
+    <a href="#" id="complain-link">complaints</a>
+  </div>
+</div>
+
+<!--JS-->
