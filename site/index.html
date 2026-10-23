@@ -70,7 +70,7 @@
   .who:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   .nav { display: flex; gap: 4px; }
-  .nav-b { flex: 1; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 13px 4px; background: transparent; color: var(--muted); border: 0; border-bottom: 2px solid var(--rule); cursor: pointer; min-height: 44px; }
+  .nav-b { flex: 1; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .02em; padding: 11px 2px; line-height: 1.25; hyphens: none; background: transparent; color: var(--muted); border: 0; border-bottom: 2px solid var(--rule); cursor: pointer; min-height: 44px; }
   .nav-b[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
   .nav-b:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   section { display: flex; flex-direction: column; gap: 12px; }
@@ -235,8 +235,8 @@
 
   <nav class="nav" role="tablist">
     <button class="nav-b" role="tab" aria-selected="true" data-s="games">GAMES</button>
-    <button class="nav-b" role="tab" aria-selected="false" data-s="pod">LOYALTY</button>
-    <button class="nav-b" role="tab" aria-selected="false" data-s="shop">SHOP</button>
+    <button class="nav-b" role="tab" aria-selected="false" data-s="pod">LOYALTY POD</button>
+    <button class="nav-b" role="tab" aria-selected="false" data-s="shop">GIFT SHOP</button>
   </nav>
 
   <section id="s-games">
