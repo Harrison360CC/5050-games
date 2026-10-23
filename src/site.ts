@@ -162,7 +162,11 @@ const nick = account.querySelector("#nick") as HTMLInputElement;
 signinLink.addEventListener("click", (e) => {
   e.preventDefault();
   if (!profile) { sheet.hidden = false; return; }
-  nick.value = profile.handle; account.hidden = false; nick.focus();
+  const locked = profile.handle_locked;
+  nick.value = profile.handle; nick.disabled = locked; $("nick-save").hidden = locked;
+  $("nick-h").textContent = locked ? `You are ${profile.handle}.` : "Your nickname.";
+  $("nick-p").textContent = locked ? "That's locked in. One per customer, no changes. Complain if you must." : "Picked at random so nobody's real name ends up on a leaderboard. You get one change, ever, so pick well. Letters, numbers, underscores, 3 to 20.";
+  account.hidden = false; if (!locked) nick.focus();
 });
 account.addEventListener("submit", async (e) => {
   e.preventDefault();

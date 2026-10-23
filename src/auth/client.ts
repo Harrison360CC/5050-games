@@ -35,12 +35,12 @@ export function onSession(cb: (s: Session | null) => void) {
   supabase.auth.onAuthStateChange((_e, s) => cb(s));
 }
 
-export interface Profile { id: string; handle: string; is_adult: boolean; banned: boolean }
+export interface Profile { id: string; handle: string; is_adult: boolean; banned: boolean; handle_locked: boolean }
 
 export async function getProfile(): Promise<Profile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data } = await supabase.from("profiles").select("id,handle,is_adult,banned").eq("id", user.id).single();
+  const { data } = await supabase.from("profiles").select("id,handle,is_adult,banned,handle_locked").eq("id", user.id).single();
   return (data as Profile) ?? null;
 }
 
@@ -52,6 +52,7 @@ export async function setHandle(handle: string): Promise<string | null> {
   const { error } = await supabase.from("profiles").update({ handle }).eq("id", user.id);
   if (!error) return null;
   if (error.code === "23505") return "taken. someone got there first.";
+  if (error.code === "P0001") return "you already picked. that was the one.";
   return error.message;
 }
 

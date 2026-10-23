@@ -30,3 +30,17 @@ revoke update on public.profiles from authenticated, anon;
 grant update (handle, is_adult, payout_email) on public.profiles to authenticated;
 
 update public.profiles set handle = '5050GameGod' where handle = 'harrisonolajos';
+
+-- One rename, ever. The random one doesn't count; the first change locks it.
+alter table public.profiles add column if not exists handle_locked boolean not null default false;
+create or replace function public.lock_handle() returns trigger language plpgsql as $$
+begin
+  if new.handle is distinct from old.handle then
+    if old.handle_locked then raise exception 'nickname already set' using errcode = 'P0001'; end if;
+    new.handle_locked := true;
+  end if;
+  return new;
+end $$;
+drop trigger if exists profiles_lock_handle on public.profiles;
+create trigger profiles_lock_handle before update on public.profiles for each row execute function public.lock_handle();
+update public.profiles set handle_locked = true where handle = '5050GameGod';
