@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rules · 5050 Games</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@700&display=swap">
+<style>
+  :root { --bg: #161615; --surface: #222221; --ink: #ECEAE4; --muted: #A5A29B; --rule: #3B3A37; --accent: #FF8B2E; color-scheme: dark; }
+  @media (prefers-color-scheme: light) { :root { --bg: #EDEBE6; --surface: #FAF9F6; --ink: #1A1A1A; --muted: #5F5D58; --rule: #C6C3BC; --accent: #B84A00; color-scheme: light; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Atkinson Hyperlegible Next", Arial, sans-serif; font-size: 16px; line-height: 1.55; padding: 0 max(16px, env(safe-area-inset-left)) 48px max(16px, env(safe-area-inset-right)); }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule); margin-bottom: 24px; }
+  .wm { font-family: Silkscreen, monospace; font-size: 20px; color: var(--ink); text-decoration: none; }
+  .wm b { color: var(--accent); }
+  .meta { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; font-family: "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+  p, li { max-width: 62ch; }
+  ol, ul { padding-left: 1.3em; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); }
+  .foot { margin-top: 36px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .foot a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="wm" href="/">50<b>/</b>50</a><span class="meta">rules · v0.1 · Oct 22, 2026</span></div>
+  <h1>Official rules</h1>
+  <p class="meta">This is the page people screenshot when they're angry, so it's written plainly. One joke per section, max.</p>
+
+  <h2>1. The deal</h2>
+  <p>5050 Games runs three free browser games. Each game has a weekly leaderboard. When the week ends, the player with the highest verified ranked score on each game receives that game's pot: 50% of the net advertising revenue the game earned that week, plus 50% of the net profit from merchandise sold under that game's name, plus any founder's seed and any rollover from unclaimed prior weeks. The other 50% of ad revenue and merch profit pays for the site and the person running it.</p>
+
+  <h2>2. Sponsor</h2>
+  <p>360 Creative Consulting, Prince Edward Island, Canada. Contact: play@play5050games.com.</p>
+
+  <h2>3. No purchase necessary</h2>
+  <p>Entry is free. There is nothing to buy and no purchase or payment of any kind will increase your chances of winning or affect your score. Buying merchandise contributes to the pot for everyone and does nothing for your own ranking. Watching ads never changes a score.</p>
+
+  <h2>4. Eligibility</h2>
+  <ul>
+    <li>You must be at least 18, or the age of majority where you live if that's higher (19 in several Canadian provinces; 19 in Alabama and Nebraska; 21 in Mississippi).</li>
+    <li>You need a 5050 account (Google, Discord, or email link) to play ranked. Practice needs nothing.</li>
+    <li>Residents of Quebec may play but are not eligible to receive a pot, because we have not produced French-language rules. This may change.</li>
+    <li>Void where prohibited by law. Employees and household members of the sponsor are not eligible.</li>
+    <li>One account per person. Accounts found to be shared, sold, or duplicated are disqualified.</li>
+  </ul>
+
+  <h2>5. Weeks and timing</h2>
+  <p>A week runs from Monday 00:00:00 UTC to Sunday 23:59:59 UTC. Only ranked runs that finish and verify inside that window count for that week. Week numbers follow the ISO calendar.</p>
+
+  <h2>6. How scores work</h2>
+  <ul>
+    <li>Only ranked runs count. Practice runs never leave your device.</li>
+    <li>Every ranked run starts with a seed issued by our server. Your taps are recorded as tick numbers and sent to the server when the run ends. The server replays the run from the seed and your taps and computes the score itself. The score your device shows is not what we trust; the replay is.</li>
+    <li>Your best verified run of the week is your entry for that game. There is no limit on attempts, subject to the rate limits below.</li>
+    <li>Ties are broken by the earliest verified time the tied score was reached.</li>
+    <li>Winning is determined by skill. The game is the same for everyone in a given run (the seed only shuffles obstacle layout within fixed difficulty rules), and the highest score wins. No element of chance determines the winner.</li>
+  </ul>
+
+  <h2>7. Fair play</h2>
+  <ul>
+    <li>Runs whose replay does not reproduce, whose tap timing is faster than a human can produce, or that otherwise appear automated are void.</li>
+    <li>We may void any run, disqualify any account, and withhold any pot if we believe, in our sole judgment, that a run was not played by a human on an ordinary device. We keep every replay, including rejected ones, as evidence.</li>
+    <li>Rate limits apply (currently 12 ranked runs per minute per account).</li>
+    <li>When a game's pot exceeds $500, the winner must complete a short verification run on a video call, or send a video of their hands and screen, within the claim window, before being paid.</li>
+  </ul>
+
+  <h2>8. Pot amount and what "estimated" means</h2>
+  <p>During the week the pot shown is an estimate based on the ad network's running reports and merch orders to date. The ad network finalises revenue a few days after the week ends, and the figure can move up or down. The confirmed pot is the one that is paid. Each pot shows its breakdown: ad revenue, merch profit, founder's seed, and rollover. The founder's seed is money the sponsor adds out of pocket; it is shown separately, is not ad revenue, and can be changed or stopped for future weeks at any time (never for a week in progress).</p>
+  <p>Approximate value of each weekly pot: it depends on traffic and is published live on the homepage. Historically small. The guaranteed minimum pot per game per week is the founder's seed then in effect, if any.</p>
+
+  <h2>9. Claiming and payment</h2>
+  <ul>
+    <li>Winners are emailed at their account address within 24 hours of the week closing and have 72 hours to reply and claim.</li>
+    <li>Before the first payment to any account we need: legal name, mailing address, date of birth, a photo of government ID (to confirm age; deleted after checking), a signed declaration and release, and, for residents of Canada, a correctly answered mathematical skill-testing question.</li>
+    <li>Payment is by Interac e-Transfer (Canada) or PayPal (elsewhere), within 7 days of a valid claim and the ad network's confirmed figures. Pots under $1 roll over.</li>
+    <li>Unclaimed pots roll into the next week's pot for the same game.</li>
+    <li>Winners are solely responsible for any taxes. In Canada a contest prize is generally a non-taxable windfall; in the US it is generally taxable income. We don't withhold.</li>
+  </ul>
+
+  <h2>10. Ads</h2>
+  <p>Interstitial ads appear between runs, never during one. Rewarded ads are optional and always give something in-game and cosmetic (a hat, a title). They never give a run, a retry, or a point, and are capped per day. Please don't try to farm them; it gets the ad account banned and ends the pots for everyone.</p>
+
+  <h2>11. Privacy</h2>
+  <p>See the <a href="/privacy">privacy page</a>. Short version: we store your account email, your handle, your replays, and the IP and device info of ranked runs. We don't sell any of it. Replays may be shown publicly as "watch the winning run."</p>
+
+  <h2>12. Changes and disputes</h2>
+  <p>We can change these rules. Changes apply to future weeks, never the week in progress. Past versions are kept at <a href="/rules/history">/rules/history</a>. Disputes about a specific week must be raised within 14 days of that week closing, by email to play@play5050games.com, and our decision is final. These rules are governed by the laws of Prince Edward Island, Canada.</p>
+
+  <h2>13. Winners list</h2>
+  <p>Every payout ever made is listed on the <a href="/ledger">ledger</a>, with week, game, handle, and amount.</p>
+
+  <div class="foot"><a href="/">home</a><a href="/privacy">privacy</a><a href="/ledger">ledger</a><span>play@play5050games.com</span></div>
+</div>
+</body>
+</html>

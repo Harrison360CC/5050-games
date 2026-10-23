@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Privacy · 5050 Games</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@700&display=swap">
+<style>
+  :root { --bg: #161615; --surface: #222221; --ink: #ECEAE4; --muted: #A5A29B; --rule: #3B3A37; --accent: #FF8B2E; color-scheme: dark; }
+  @media (prefers-color-scheme: light) { :root { --bg: #EDEBE6; --surface: #FAF9F6; --ink: #1A1A1A; --muted: #5F5D58; --rule: #C6C3BC; --accent: #B84A00; color-scheme: light; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Atkinson Hyperlegible Next", Arial, sans-serif; font-size: 16px; line-height: 1.55; padding: 0 max(16px, env(safe-area-inset-left)) 48px max(16px, env(safe-area-inset-right)); }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule); margin-bottom: 24px; }
+  .wm { font-family: Silkscreen, monospace; font-size: 20px; color: var(--ink); text-decoration: none; }
+  .wm b { color: var(--accent); }
+  .meta { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 13px; font-family: "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+  p, li { max-width: 62ch; }
+  ul { padding-left: 1.3em; } li { margin: 4px 0; }
+  a { color: var(--accent); }
+  .foot { margin-top: 36px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .foot a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="wm" href="/">50<b>/</b>50</a><span class="meta">privacy · Oct 22, 2026</span></div>
+  <h1>Privacy</h1>
+  <p>5050 Games is run by 360 Creative Consulting, Prince Edward Island, Canada. This page says what we collect, why, and what we do with it. It's short because we don't collect much.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><b>Practice play:</b> nothing leaves your device. Your best practice score is stored in your browser only.</li>
+    <li><b>Account:</b> your email address and, if you sign in with Google or Discord, the name and avatar those services give us. We generate a handle from it. You can change the handle.</li>
+    <li><b>Ranked runs:</b> the game, the seed we issued, the tick numbers of your taps, the verified score, timestamps, and the IP address and browser details of the request. We keep every ranked replay, including rejected ones, as evidence for fair play.</li>
+    <li><b>Winners:</b> before paying, we collect legal name, mailing address, date of birth, and a photo of government ID. The ID photo is used to confirm age and identity and deleted after checking. The rest is kept for our accounting records.</li>
+    <li><b>Complaints:</b> whatever you type into the complaints form, and the email you give us.</li>
+    <li><b>Ads:</b> ads are served by Google. Google's own cookies and identifiers apply when an ad loads; see <a href="https://policies.google.com/technologies/ads" rel="noopener">how Google uses data</a>. You can opt out of personalised ads at <a href="https://adssettings.google.com" rel="noopener">Google ad settings</a>.</li>
+  </ul>
+
+  <h2>What we do with it</h2>
+  <ul>
+    <li>Run the leaderboard and pay the winner.</li>
+    <li>Check for cheating.</li>
+    <li>Reply to you if you write to us.</li>
+    <li>Show winning runs publicly as replays, with the handle attached.</li>
+  </ul>
+  <p>We don't sell your data. We don't send marketing email unless you ask for it. We don't buy data about you from anyone.</p>
+
+  <h2>Who else sees it</h2>
+  <ul>
+    <li>Supabase (database and sign-in), hosted in the United States.</li>
+    <li>Cloudflare (hosting and the score verifier).</li>
+    <li>Resend (sends the sign-in emails).</li>
+    <li>Google (ads, and sign-in if you choose it). Discord (sign-in if you choose it).</li>
+    <li>Fourthwall runs the shop; their privacy policy covers orders.</li>
+    <li>Law enforcement, if legally required.</li>
+  </ul>
+
+  <h2>Cookies and storage</h2>
+  <p>We use browser storage for your session, your practice best, and your ad-cap counts. Google's ad tags set their own cookies. No analytics beyond what Cloudflare provides in aggregate.</p>
+
+  <h2>Your rights</h2>
+  <p>Email play@play5050games.com to see what we hold about you, correct it, or delete your account. Deleting your account removes your profile; verified ranked runs that already paid out stay in the public ledger with the handle at the time. Canadian residents have rights under PIPEDA; EU and UK residents have rights under GDPR; California residents have rights under the CCPA. We'll answer within 30 days.</p>
+
+  <h2>Kids</h2>
+  <p>Accounts are for people 18 and over (19 where that's the age of majority). If we learn an account belongs to someone younger, we delete it.</p>
+
+  <h2>Changes</h2>
+  <p>If this page changes in a way that matters, the date at the top changes and we'll mention it on the homepage.</p>
+
+  <div class="foot"><a href="/">home</a><a href="/rules">rules</a><a href="/ledger">ledger</a><span>play@play5050games.com</span></div>
+</div>
+</body>
+</html>

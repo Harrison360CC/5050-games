@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ledger · 5050 Games</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@700&display=swap">
+<style>
+  :root { --bg: #161615; --surface: #222221; --ink: #ECEAE4; --muted: #A5A29B; --rule: #3B3A37; --accent: #FF8B2E; color-scheme: dark; }
+  @media (prefers-color-scheme: light) { :root { --bg: #EDEBE6; --surface: #FAF9F6; --ink: #1A1A1A; --muted: #5F5D58; --rule: #C6C3BC; --accent: #B84A00; color-scheme: light; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: "Atkinson Hyperlegible Next", Arial, sans-serif; font-size: 16px; line-height: 1.5; padding: 0 max(16px, env(safe-area-inset-left)) 48px max(16px, env(safe-area-inset-right)); }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule); margin-bottom: 24px; }
+  .wm { font-family: Silkscreen, monospace; font-size: 20px; color: var(--ink); text-decoration: none; }
+  .wm b { color: var(--accent); }
+  .meta { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 13px; font-family: "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 28px 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+  .pots { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .receipt { background: var(--surface); border: 1px solid var(--rule); padding: 12px; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .receipt .g { font-family: "Atkinson Hyperlegible Next", sans-serif; font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+  .row { display: flex; gap: 6px; align-items: baseline; }
+  .row .k { color: var(--muted); white-space: nowrap; }
+  .row .d { flex: 1; border-bottom: 1px dotted var(--rule); transform: translateY(-4px); }
+  .row.total { border-top: 1px solid var(--ink); margin-top: 6px; padding-top: 6px; font-weight: 600; font-size: 15px; }
+  .row.total .k { color: var(--ink); }
+  .stamp { display: inline-block; border: 1px dashed var(--muted); color: var(--muted); padding: 0 5px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin-top: 6px; }
+  table { width: 100%; border-collapse: collapse; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--rule); }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  td.amt, th.amt { text-align: right; }
+  .empty { color: var(--muted); padding: 12px 6px; }
+  p { max-width: 62ch; color: var(--muted); font-size: 14px; }
+  .foot { margin-top: 36px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .foot a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="wm" href="/">50<b>/</b>50</a><span class="meta" id="wk">ledger</span></div>
+  <h1>Ledger</h1>
+  <p>Every dollar in and out, per game, per week. Estimated means what the ad dashboard says right now; confirmed means the network finalised it and that's what was paid. Seed is money Harrison put in himself and is shown on its own line so nobody mistakes it for ad revenue.</p>
+
+  <h2>This week</h2>
+  <div class="pots" id="pots"><div class="receipt">loading…</div></div>
+
+  <h2>Every payout, ever</h2>
+  <table>
+    <thead><tr><th>week</th><th>game</th><th>paid to</th><th class="amt">amount</th></tr></thead>
+    <tbody id="hist"><tr><td colspan="4" class="empty">Nobody has been paid yet. Technically, zero is winning.</td></tr></tbody>
+  </table>
+
+  <div class="foot"><a href="/">home</a><a href="/rules">rules</a><a href="/privacy">privacy</a><span>play@play5050games.com</span></div>
+</div>
+<script>
+(async () => {
+  const $ = (c) => "$" + (c / 100).toFixed(2);
+  const names = { pigeon: "Drunk Pigeon", rent: "Rent's Due", slumlord: "Slumlord" };
+  const row = (k, v, cls = "") => `<div class="row ${cls}"><span class="k">${k}</span><span class="d"></span><span>${v}</span></div>`;
+  try {
+    const r = await fetch("/api/pots"); const j = await r.json();
+    document.getElementById("wk").textContent = "ledger · " + j.week;
+    document.getElementById("pots").innerHTML = Object.entries(j.pots).map(([g, p]) => `<div class="receipt">
+      <div class="g">${names[g] || g}</div>
+      ${row("ad money (est.)", $(p.ad_estimate_cents || 0))}
+      ${row("house keeps half", "-" + $(Math.ceil((p.ad_estimate_cents || 0) / 2)))}
+      ${row("merch profit, half", $(Math.floor((p.merch_profit_cents || 0) / 2)))}
+      ${row("seed (Harrison)", $(p.seed_cents || 0))}
+      ${row("rollover", $(p.rollover_cents || 0))}
+      ${row("POT", $(p.est_pot_cents || 0), "total")}
+      <span class="stamp">${p.confirmed ? "confirmed" : "estimated"}</span>
+    </div>`).join("");
+  } catch {
+    document.getElementById("pots").innerHTML = `<div class="receipt">Ledger isn't wired up yet. Check back after the first week.</div>`;
+  }
+})();
+</script>
+</body>
+</html>

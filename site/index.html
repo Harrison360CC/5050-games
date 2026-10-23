@@ -44,6 +44,9 @@
   .item b { display: block; }
   .item span { font-size: 13px; color: var(--muted); }
   .item .soon { font-family: var(--mono); font-size: 12px; }
+  a.item { text-decoration: none; color: inherit; }
+  a.item .soon { color: var(--accent-text, var(--accent)); font-weight: 600; }
+  .sw.mug { background: var(--accent); }
   .chip-pot { font-weight: 500; opacity: .75; margin-left: 4px; }
   .tab[aria-selected="true"] .chip-pot { opacity: .85; }
   .hint { font-size: 13px; color: var(--muted); margin: 0; }
@@ -108,7 +111,7 @@
 <div class="app">
   <div class="top">
     <a class="wm" href="#">50<b>/</b>50</a>
-    <div class="links"><a href="#ledger">ledger</a><a href="#rules">rules</a><a href="#" id="signin-link">sign in</a></div>
+    <div class="links"><a href="/ledger">ledger</a><a href="/rules">rules</a><a href="#" id="signin-link">sign in</a></div>
   </div>
 
   <nav class="nav" role="tablist">
@@ -157,11 +160,12 @@
     <div class="panel">
       <div class="pot"><div class="n">50%</div><div class="l">of every item's profit goes into that game's pot</div></div>
       <div class="shop">
+        <a class="item" href="https://360-creative-consulting-shop.fourthwall.com/products/a-mug" target="_blank" rel="noopener"><div class="sw mug"></div><div><b>A Mug</b><span>5050 house line. Holds coffee. Half the profit goes into the pot.</span></div><span class="soon">buy</span></a>
         <div class="item"><div class="sw"></div><div><b>Drunk Pigeon</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
         <div class="item"><div class="sw"></div><div><b>Rent's Due</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
         <div class="item"><div class="sw"></div><div><b>Slumlord</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
-        <div class="item"><div class="sw"></div><div><b>5050 house</b><span>the logo on things</span></div><span class="soon">soon</span></div>
       </div>
+      <p class="hint">Shop runs on Fourthwall. "Profit" means what's left after printing, shipping and their fees, and the per-item number shows up in the ledger once the first order ships.</p>
     </div>
   </section>
 
@@ -206,9 +210,9 @@
 
   <div class="foot">
     <span>free, nothing to put in</span>
-    <a href="#rules">rules</a>
-    <a href="#privacy">privacy</a>
-    <a href="#ledger">every payout, ever</a>
+    <a href="/rules">rules</a>
+    <a href="/privacy">privacy</a>
+    <a href="/ledger">every payout, ever</a>
     <a href="#" id="complain-link">complaints</a>
   </div>
 </div>
