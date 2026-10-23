@@ -11,6 +11,7 @@
  */
 import { verify } from "../../src/sim/verify";
 import SEED from "../../seed.json";
+import LEDGER from "../../ledger.json";
 import type { Replay } from "../../src/sim/types";
 
 interface Env { SUPABASE_URL: string; SUPABASE_SERVICE_KEY: string }
@@ -28,7 +29,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     if (req.method === "POST" && path === "/run/finish") return finishRun(req, env);
     if (req.method === "POST" && path === "/complain") return complain(req, env);
     if (req.method === "GET" && path.startsWith("/leaderboard/")) return leaderboard(path.split("/")[2] ?? "", env);
-    if (req.method === "GET" && path === "/pots") return pots(env);
+    if (req.method === "GET" && path === "/pots") return pots();
+    if (req.method === "GET" && path === "/plays") return plays(env);
     return json({ error: "not found" }, 404);
   } catch (e) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status);
@@ -74,18 +76,47 @@ async function leaderboard(game: string, env: Env) {
   return json({ week: weekKey(), rows }, 200, 30);
 }
 
-async function pots(env: Env) {
-  const rows = await sb(env, `weeks?week=eq.${weekKey()}&select=game,ad_estimate_cents,ad_revenue_cents,merch_profit_cents,seed_cents,rollover_cents,payout_cents,paid_at`);
+type Entry = { date: string; game: string; kind: string; cents: number; note?: string };
+const SEEDS = SEED as unknown as Record<string, number>;
+const ENTRIES = (LEDGER as unknown as { entries: Entry[] }).entries;
+
+/** How many cents of an entry land in ONE game's pot. */
+function potShare(e: Entry, game: string): number {
+  const mine = e.game === game ? e.cents : e.game === "all" ? Math.floor(e.cents / 3) : 0;
+  if (e.kind === "ads" || e.kind === "merch") return Math.floor(mine / 2);
+  if (e.kind === "seed" || e.kind === "rollover") return mine;
+  if (e.kind === "payout") return -mine;
+  return 0;
+}
+
+function pots() {
+  const week = weekKey();
   const out: Record<string, unknown> = {};
   for (const g of GAMES) {
-    const r = rows.find((x: any) => x.game === g);
-    // Seed comes from seed.json in the repo (git history is the audit trail), not the DB.
-    const seed = (SEED as unknown as Record<string, number>)[g] ?? 0;
-    const base = r ?? { ad_estimate_cents: 0, ad_revenue_cents: 0, merch_profit_cents: 0, rollover_cents: 0 };
-    const est = Math.floor(base.ad_estimate_cents / 2) + Math.floor(base.merch_profit_cents / 2) + seed + base.rollover_cents;
-    out[g] = { ...base, seed_cents: seed, est_pot_cents: est, confirmed: base.ad_revenue_cents > 0 };
+    const seed = SEEDS[g] ?? 0;
+    let ads = 0, merch = 0, rollover = 0;
+    for (const e of ENTRIES) {
+      if (weekKey(new Date(e.date + "T12:00:00Z")) !== week) continue;
+      const share = potShare(e, g);
+      if (e.kind === "ads") ads += share; else if (e.kind === "merch") merch += share; else if (e.kind === "rollover") rollover += share;
+    }
+    out[g] = { seed_cents: seed, ads_cents: ads, merch_cents: merch, rollover_cents: rollover, est_pot_cents: seed + ads + merch + rollover, confirmed: false };
   }
-  return json({ week: weekKey(), pots: out }, 200, 60);
+  return json({ week, pots: out, entries: ENTRIES.slice().reverse() }, 200, 60);
+}
+
+async function plays(env: Env) {
+  const week = weekKey();
+  const rows = await sb(env, `runs?select=game,score,finished_at,profiles(handle)&score=not.is.null&week=eq.${week}&order=finished_at.desc&limit=100`);
+  // rank each run against the current week board for its game (best per player)
+  const boards: Record<string, { handle: string; score: number }[]> = {};
+  for (const g of GAMES) boards[g] = await sb(env, `weekly_leaderboard?game=eq.${g}&week=eq.${week}&select=handle,score&order=score.desc,finished_at.asc&limit=25`);
+  const out = rows.map((r: any) => {
+    const handle = r.profiles?.handle ?? "?";
+    const idx = boards[r.game]!.findIndex((b) => b.handle === handle && b.score === r.score);
+    return { game: r.game, score: r.score, at: r.finished_at, handle, rank: idx >= 0 ? idx + 1 : null };
+  });
+  return json({ week, plays: out }, 200, 30);
 }
 
 async function complain(req: Request, env: Env) {

@@ -32,6 +32,14 @@
   th { color: var(--muted); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
   td.amt, th.amt { text-align: right; }
   .empty { color: var(--muted); padding: 12px 6px; }
+  td.amt.neg { color: #D9534F; }
+  .tag { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--rule); padding: 0 5px; color: var(--muted); }
+  .tag.top { color: var(--accent); border-color: var(--accent); }
+  .now { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .now div { background: var(--surface); border: 1px solid var(--rule); padding: 10px 12px; }
+  .now b { display: block; font-family: "IBM Plex Mono", monospace; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .now span { font-size: 12px; color: var(--muted); }
+  @media (max-width: 420px) { .now { grid-template-columns: 1fr; } }
   p { max-width: 62ch; color: var(--muted); font-size: 14px; }
   .foot { margin-top: 36px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
   .foot a { color: var(--muted); }
@@ -41,40 +49,46 @@
 <div class="wrap">
   <div class="top"><a class="wm" href="/">50<b>/</b>50</a><span class="meta" id="wk">ledger</span></div>
   <h1>Ledger</h1>
-  <p>Every dollar in and out, per game, per week. Estimated means what the ad dashboard says right now; confirmed means the network finalised it and that's what was paid. Seed is money Harrison put in himself and is shown on its own line so nobody mistakes it for ad revenue.</p>
+  <p>Two lists. What's in the pot and how it got there, and who's been playing. Nothing else.</p>
 
-  <h2>This week</h2>
-  <div class="pots" id="pots"><div class="receipt">loading…</div></div>
-
-  <h2>Every payout, ever</h2>
+  <h2>Pot</h2>
+  <div class="now" id="now"></div>
   <table>
-    <thead><tr><th>week</th><th>game</th><th>paid to</th><th class="amt">amount</th></tr></thead>
-    <tbody id="hist"><tr><td colspan="4" class="empty">Nobody has been paid yet. Technically, zero is winning.</td></tr></tbody>
+    <thead><tr><th>date</th><th>what</th><th>game</th><th class="amt">to the pot</th></tr></thead>
+    <tbody id="log"><tr><td colspan="4" class="empty">loading…</td></tr></tbody>
+  </table>
+
+  <h2>Plays</h2>
+  <table>
+    <thead><tr><th>when</th><th>who</th><th>game</th><th class="amt">score</th></tr></thead>
+    <tbody id="plays"><tr><td colspan="4" class="empty">loading…</td></tr></tbody>
   </table>
 
   <div class="foot"><a href="/">home</a><a href="/rules">rules</a><a href="/privacy">privacy</a><span>play@play5050games.com</span></div>
 </div>
 <script>
 (async () => {
-  const $ = (c) => "$" + (c / 100).toFixed(2);
-  const names = { pigeon: "Drunk Pigeon", rent: "Rent's Due", slumlord: "Slumlord" };
-  const row = (k, v, cls = "") => `<div class="row ${cls}"><span class="k">${k}</span><span class="d"></span><span>${v}</span></div>`;
+  const $ = (c) => (c < 0 ? "-" : "") + "$" + (Math.abs(c) / 100).toFixed(2);
+  const names = { pigeon: "Drunk Pigeon", rent: "Rent's Due", slumlord: "Slumlord", all: "all three" };
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const kinds = { ads: "ad revenue", merch: "merch profit", seed: "seed (Harrison)", rollover: "rollover", payout: "paid out", note: "" };
+  const toPot = (e) => { const base = e.game === "all" ? e.cents : e.cents; if (e.kind === "ads" || e.kind === "merch") return Math.floor(base / 2); if (e.kind === "seed" || e.kind === "rollover") return base; if (e.kind === "payout") return -base; return 0; };
   try {
-    const r = await fetch("/api/pots"); const j = await r.json();
+    const j = await (await fetch("/api/pots")).json();
     document.getElementById("wk").textContent = "ledger · " + j.week;
-    document.getElementById("pots").innerHTML = Object.entries(j.pots).map(([g, p]) => `<div class="receipt">
-      <div class="g">${names[g] || g}</div>
-      ${row("ad money (est.)", $(p.ad_estimate_cents || 0))}
-      ${row("house keeps half", "-" + $(Math.ceil((p.ad_estimate_cents || 0) / 2)))}
-      ${row("merch profit, half", $(Math.floor((p.merch_profit_cents || 0) / 2)))}
-      ${row("seed (Harrison)", $(p.seed_cents || 0))}
-      ${row("rollover", $(p.rollover_cents || 0))}
-      ${row("POT", $(p.est_pot_cents || 0), "total")}
-      <span class="stamp">${p.confirmed ? "confirmed" : "estimated"}</span>
-    </div>`).join("");
-  } catch {
-    document.getElementById("pots").innerHTML = `<div class="receipt">Ledger isn't wired up yet. Check back after the first week.</div>`;
-  }
+    document.getElementById("now").innerHTML = ["pigeon", "rent", "slumlord"].map((g) => `<div><b>${$(j.pots[g].est_pot_cents)}</b><span>${names[g]} · seed ${$(j.pots[g].seed_cents)}</span></div>`).join("");
+    const rows = j.entries.map((e) => {
+      const p = toPot(e); const what = e.kind === "note" ? esc(e.note || "") : `${kinds[e.kind] || esc(e.kind)}${e.note ? " · " + esc(e.note) : ""}${(e.kind === "ads" || e.kind === "merch") ? ` <span class="tag">half of ${$(e.cents)}</span>` : ""}`;
+      return `<tr><td>${esc(e.date)}</td><td>${what}</td><td>${names[e.game] || esc(e.game)}</td><td class="amt ${p < 0 ? "neg" : ""}">${e.kind === "note" ? "" : (p > 0 ? "+" : "") + $(p)}</td></tr>`;
+    });
+    document.getElementById("log").innerHTML = rows.join("") || `<tr><td colspan="4" class="empty">Nothing yet.</td></tr>`;
+  } catch { document.getElementById("log").innerHTML = `<tr><td colspan="4" class="empty">Couldn't load the pot log.</td></tr>`; }
+  try {
+    const j = await (await fetch("/api/plays")).json();
+    const when = (iso) => { const d = new Date(iso); const m = (Date.now() - d) / 60000; if (m < 1) return "just now"; if (m < 60) return Math.floor(m) + "m ago"; if (m < 1440) return Math.floor(m / 60) + "h ago"; return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }); };
+    const rows = j.plays.map((p) => `<tr><td>${when(p.at)}</td><td>${esc(p.handle)}${p.rank ? ` <span class="tag top">#${p.rank}</span>` : ""}</td><td>${names[p.game] || esc(p.game)}</td><td class="amt">${p.score}</td></tr>`);
+    document.getElementById("plays").innerHTML = rows.join("") || `<tr><td colspan="4" class="empty">Nobody has played ranked this week. Technically, zero is winning.</td></tr>`;
+  } catch { document.getElementById("plays").innerHTML = `<tr><td colspan="4" class="empty">Couldn't load plays.</td></tr>`; }
 })();
 </script>
 </body>

@@ -1,0 +1,6 @@
+{
+  "_what": "The pot log. One line per thing that moved money. Harrison adds lines by hand (or the daily check-in does). cents are GROSS: ads and merch lines put HALF into the pot, seed and rollover lines put all of it in, payout lines are money out. game is pigeon, rent, slumlord, or all (split three ways). The site recomputes pots on every deploy.",
+  "entries": [
+    { "date": "2026-10-22", "game": "all", "kind": "note", "cents": 0, "note": "Site went live. Seed is set in seed.json. No ad revenue yet; AdSense review requested." }
+  ]
+}
