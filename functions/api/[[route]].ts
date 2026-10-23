@@ -10,6 +10,7 @@
  *   POST /api/complain     { who, email, body } -> { ok }   (stored; no auto-email)
  */
 import { verify } from "../../src/sim/verify";
+import SEED from "../../seed.json";
 import type { Replay } from "../../src/sim/types";
 
 interface Env { SUPABASE_URL: string; SUPABASE_SERVICE_KEY: string }
@@ -78,8 +79,11 @@ async function pots(env: Env) {
   const out: Record<string, unknown> = {};
   for (const g of GAMES) {
     const r = rows.find((x: any) => x.game === g);
-    const est = r ? Math.floor(r.ad_estimate_cents / 2) + Math.floor(r.merch_profit_cents / 2) + r.seed_cents + r.rollover_cents : 0;
-    out[g] = r ? { ...r, est_pot_cents: est, confirmed: r.ad_revenue_cents > 0 } : { est_pot_cents: 0, confirmed: false };
+    // Seed comes from seed.json in the repo (git history is the audit trail), not the DB.
+    const seed = (SEED as unknown as Record<string, number>)[g] ?? 0;
+    const base = r ?? { ad_estimate_cents: 0, ad_revenue_cents: 0, merch_profit_cents: 0, rollover_cents: 0 };
+    const est = Math.floor(base.ad_estimate_cents / 2) + Math.floor(base.merch_profit_cents / 2) + seed + base.rollover_cents;
+    out[g] = { ...base, seed_cents: seed, est_pot_cents: est, confirmed: base.ad_revenue_cents > 0 };
   }
   return json({ week: weekKey(), pots: out }, 200, 60);
 }

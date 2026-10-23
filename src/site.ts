@@ -59,18 +59,36 @@ async function loadLive() {
 }
 
 // ---- runs ----
-async function seedForRun(): Promise<number> {
+// Each ranked run gets its own server-issued seed + runId. We prefetch one so
+// the next run starts instantly, but the ACTIVE run is only set when a seed is
+// actually handed to the game (seed()), never when the prefetch returns.
+type SeedEntry = { runId: string | null; seed: number };
+const seedCache: SeedEntry[] = [];
+let pendingSeed: Promise<void> | null = null;
+const randomSeed = () => (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
+
+async function fetchSeed(): Promise<SeedEntry> {
   if (mode === "ranked" && profile) {
     try {
       const r = await api<{ runId: string; seed: number }>("/run/start", { game: current });
-      activeRun = r; return r.seed;
+      return { runId: r.runId, seed: r.seed };
     } catch (e) {
       say(`ranked unavailable: ${(e as Error).message}. playing practice.`);
       setMode("practice");
     }
   }
-  activeRun = null;
-  return (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
+  return { runId: null, seed: randomSeed() };
+}
+async function refillSeed() {
+  if (pendingSeed || seedCache.length) return;
+  pendingSeed = fetchSeed().then((e) => { seedCache.push(e); }).finally(() => { pendingSeed = null; });
+  await pendingSeed;
+}
+function takeSeed(): number {
+  const e = seedCache.shift() ?? { runId: null, seed: randomSeed() };
+  activeRun = e.runId ? { runId: e.runId, seed: e.seed } : null;
+  void refillSeed();
+  return e.seed;
 }
 
 async function onRun(replay: Replay, claimed: number) {
@@ -83,37 +101,27 @@ async function onRun(replay: Replay, claimed: number) {
       if (res.ok) { say(`ranked: ${res.score} verified.`); await loadLive(); }
       else say(`ranked run rejected: ${res.reason}`);
     } catch (e) { say(`couldn't submit: ${(e as Error).message}`); }
+  } else if (mode === "ranked") {
+    say("that run wasn't ranked (no server seed). next one is.");
   }
   renderTop();
 }
 
-// seed is requested lazily: mountGame calls seed() per run, so we pre-fetch for ranked
-let pendingSeed: Promise<number> | null = null;
 function show(g: GameKey) {
   current = g;
   unmount?.();
-  pendingSeed = null;
-  unmount = mountGame(screen, GAMES[g], {
-    seed: () => { const s = seedCache.shift(); void refillSeed(); return s ?? ((Date.now() ^ (Math.random() * 0xffffffff)) >>> 0); },
-    onRun,
-  });
+  seedCache.length = 0; activeRun = null;
+  unmount = mountGame(screen, GAMES[g], { seed: takeSeed, onRun });
   void refillSeed();
   renderChips(); renderPot(); renderTop();
   void loadLive();
-}
-const seedCache: number[] = [];
-async function refillSeed() {
-  if (pendingSeed || seedCache.length) return;
-  pendingSeed = seedForRun();
-  seedCache.push(await pendingSeed);
-  pendingSeed = null;
 }
 
 function setMode(m: typeof mode) {
   if (m === "ranked" && !profile) { sheet.hidden = false; return; }
   if (m === "ranked" && profile && !profile.is_adult) { sheet.hidden = false; showAdultStep(); return; }
   mode = m;
-  seedCache.length = 0; void refillSeed();
+  seedCache.length = 0; activeRun = null; void refillSeed();
   for (const x of modeEl.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.m === m));
   renderTop();
 }
