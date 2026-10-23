@@ -153,6 +153,7 @@ async function flushOutbox() {
 
 async function onRun(replay: Replay, claimed: number) {
   const r = verify(replay);
+  offerShare(claimed);
   if (r.ok && r.score === claimed && claimed > best[current]) best[current] = claimed;
   if (activeRun && replay.seed === activeRun.seed) {
     const run = activeRun; activeRun = null;
@@ -169,10 +170,21 @@ function show(g: GameKey) {
   current = g;
   unmount?.();
   seedCache.length = 0; activeRun = null;
+  shareBtn.hidden = true;
   unmount = mountGame(screen, GAMES[g], {
     seed: takeSeed,
     onRun,
-    target: () => ({ score: TOP[current][0]?.score ?? 0, handle: TOP[current][0]?.handle ?? "", ranked: mode === "ranked" }),
+    target: () => {
+      const rows = TOP[current];
+      const me = profile ? rows.findIndex((r) => r.handle === profile!.handle) : -1;
+      return {
+        score: rows[0]?.score ?? 0,
+        handle: rows[0]?.handle ?? "",
+        ranked: mode === "ranked",
+        rank: me >= 0 ? me + 1 : undefined,
+        closes: untilWeekEnd().replace(" left", ""),
+      };
+    },
     ready: () => mode !== "ranked" || seedCache.length > 0 || activeRun !== null,
   });
   void refillSeed();
@@ -180,12 +192,17 @@ function show(g: GameKey) {
   void loadLive();
 }
 
+function paintMode() {
+  for (const x of modeEl.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.m === mode));
+}
 function setMode(m: typeof mode) {
-  if (m === "ranked" && !profile) { sheet.hidden = false; return; }
-  if (m === "ranked" && profile && !profile.is_adult) { sheet.hidden = false; showAdultStep(); return; }
+  // Open the sheet but leave the toggle showing the mode you are ACTUALLY in,
+  // otherwise pressing Ranked looks like a button that did nothing.
+  if (m === "ranked" && !profile) { sheet.hidden = false; paintMode(); return; }
+  if (m === "ranked" && profile && !profile.is_adult) { sheet.hidden = false; showAdultStep(); paintMode(); return; }
   mode = m;
   seedCache.length = 0; activeRun = null; void refillSeed();
-  for (const x of modeEl.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.m === m));
+  paintMode();
   renderTop();
 }
 
@@ -200,16 +217,32 @@ function showLoginStep() {
 }
 onSession(async () => {
   profile = await getProfile();
+  // Apply the age confirmation they already gave before the provider hop.
+  if (profile && !profile.is_adult) {
+    let pre = false;
+    try { pre = localStorage.getItem("5050.adult") === "1"; } catch {}
+    if (pre) { await setAdult(); profile = await getProfile(); }
+  }
   signinLink.textContent = profile ? profile.handle : "sign in";
   if (profile && !profile.is_adult && !sheet.hidden) showAdultStep();
   if (profile?.is_adult && !sheet.hidden) { sheet.hidden = true; setMode("ranked"); }
 });
-sheet.querySelector("#g-google")!.addEventListener("click", () => signInWith("google").catch((e) => say(e.message)));
-sheet.querySelector("#g-discord")!.addEventListener("click", () => signInWith("discord").catch((e) => say(e.message)));
+/** Age is confirmed BEFORE the provider hop, so nobody comes back from Google
+ *  to a second form. The box is remembered and applied once the session lands. */
+const adultPre = sheet.querySelector("#adult-pre") as HTMLInputElement;
+function gateOk(): boolean {
+  if (adultPre.checked) { try { localStorage.setItem("5050.adult", "1"); } catch {} return true; }
+  say("tick the 18+ box first. it is the one rule we cannot bend.");
+  adultPre.focus();
+  return false;
+}
+sheet.querySelector("#g-google")!.addEventListener("click", () => { if (gateOk()) signInWith("google").catch((e) => say(e.message)); });
+sheet.querySelector("#g-discord")!.addEventListener("click", () => { if (gateOk()) signInWith("discord").catch((e) => say(e.message)); });
 sheet.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = (sheet.querySelector("#email") as HTMLInputElement).value.trim();
   if (!email) return;
+  if (!gateOk()) return;
   try { await signInWithEmail(email); say("link sent. check your email, then come back here.", 8000); sheet.hidden = true; }
   catch (err) { say((err as Error).message); }
 });
@@ -286,10 +319,27 @@ complain.addEventListener("submit", async (e) => {
 complain.querySelector(".close")!.addEventListener("click", () => { complain.hidden = true; });
 $("complain-link").addEventListener("click", (e) => { e.preventDefault(); complain.hidden = false; paintComplaint(); });
 
+const shareBtn = $<HTMLButtonElement>("share");
+/** The only distribution channel here is somebody's group chat. */
+function offerShare(score: number) {
+  if (score <= 0) { shareBtn.hidden = true; return; }
+  const name = ({ pigeon: "Drunk Pigeon", rent: "Rent's Due", slumlord: "Slumlord" } as Record<string, string>)[current] ?? current;
+  const text = `${score} on ${name}. ${mode === "ranked" ? "beat me before Sunday" : "beat that"}: play5050games.com`;
+  shareBtn.textContent = `share your ${score}`;
+  shareBtn.hidden = false;
+  shareBtn.onclick = async () => {
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+      await navigator.clipboard.writeText(text);
+      say("copied. go ruin someone's evening.");
+    } catch { /* they changed their mind, which is allowed */ }
+  };
+}
+
 const streak = bumpStreak();
 function paintMeta() {
   const el = document.getElementById("potline");
-  if (el) el.innerHTML = `<b>${untilWeekEnd()}</b> · top score when the week closes takes the pot${streak > 1 ? ` · <b>day ${streak}</b> in a row` : ""} · <a href="/rules">how it works</a>`;
+  if (el) el.innerHTML = `<b>${untilWeekEnd()}</b> · top score takes the pot${streak > 1 ? ` · <b>day ${streak}</b> in a row` : ""}<br><a href="/rules">how it works</a> · <a href="/ledger">every payout, ever</a>`;
   const wk = document.getElementById("wk");
   if (wk) wk.textContent = untilWeekEnd();
 }

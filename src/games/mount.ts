@@ -2,7 +2,7 @@ import type { Replay, Sim } from "../sim/types";
 import { Runner } from "./runner";
 
 /** What the renderer is told about the run, beyond the sim state. */
-export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean; waiting: boolean; note: string }
+export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean; waiting: boolean; note: string; sub: string; firstRun: boolean }
 
 export interface GameDef<S> {
   sim: Sim<S>;
@@ -19,7 +19,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   seed: () => number;
   onRun: (replay: Replay, claimedScore: number) => void;
   /** The score to beat this week, and who holds it. Read fresh every frame. */
-  target?: () => { score: number; handle: string; ranked: boolean };
+  target?: () => { score: number; handle: string; ranked: boolean; rank?: number; closes?: string };
   /** False while a ranked course is still being fetched. Taps are ignored
    *  until it is true, so a ranked run can never start without a server seed
    *  and silently turn out not to count. */
@@ -38,6 +38,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   let submitted = false;
   let alive = true;
   let note = "";
+  let firstRun = true;
 
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
@@ -56,7 +57,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   function onTap(e: Event) {
     e.preventDefault();
     if (opts.ready && !opts.ready()) return; // still fetching a ranked course
-    if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; note = ""; return; }
+    if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; note = ""; firstRun = false; return; }
     runner.tap();
   }
   // e.repeat guard: OS key-repeat fires ~30Hz, which would otherwise record a
@@ -80,7 +81,10 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
     }
     const t = opts.target?.() ?? { score: 0, handle: "", ranked: false };
     const waiting = !(opts.ready?.() ?? true);
-    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting, note });
+    const sub = waiting ? "getting your course…"
+      : !t.ranked ? "practice. this one does not count."
+      : t.closes ? `${t.rank ? ordinal(t.rank) + " this week · " : ""}pot closes in ${t.closes}` : "";
+    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting, note, sub, firstRun });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -107,4 +111,9 @@ function deathNote(score: number, best: number, target: number): string {
   if (target > 0 && target - score <= Math.max(3, Math.round(target * 0.12))) return `${target - score + 1} more and the lead is yours.`;
   if (best > 0 && best - score <= 2) return `${best - score} off your best. go again.`;
   return "";
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]!);
 }

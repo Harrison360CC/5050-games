@@ -72,7 +72,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
   ctx.font = "14px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`floors · best ${hud.best}`, SL_W / 2, 102);
   drawChase(ctx, hud, s.floors.length - 1, SL_W, "rgba(26,20,16,0.7)", "#2e8b57");
 
-  if (!hud.started) {
+  if (!hud.started && hud.firstRun) {
     ctx.fillStyle = C.text; ctx.font = "bold 22px system-ui, sans-serif"; ctx.fillText("SLUMLORD", SL_W / 2, 200);
     ctx.font = "15px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.8)"; ctx.fillText("tap to drop the floor. overhang falls off.", SL_W / 2, 226);
     ctx.fillStyle = C.ok; ctx.font = "bold 15px system-ui, sans-serif"; ctx.fillText("land it dead centre and you win width back.", SL_W / 2, 250);
@@ -84,6 +84,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillText(`${s.floors.length - 1} floors. tap to go again.`, SL_W / 2, 280);
     if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, SL_W / 2, 310); }
+    if (hud.sub) { ctx.font = "13px system-ui, sans-serif"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, SL_W / 2, 332); }
   }
   ctx.restore();
 }

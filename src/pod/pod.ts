@@ -51,7 +51,7 @@ const BILLBOARDS = [
   "WELCOME, VALUED ASSET",
 ];
 
-const PAL = { floor: "#2d2f2b", floor2: "#33352f", wall: "#1b1c19", tape: "#8f9a3a", pod: "#3b3d3a", podLit: "#FF8B2E", vend: "#4a3b2f", cooler: "#5f7d8c", board: "#15161a", ink: "#ECEAE4", muted: "#A5A29B", skin: "#e8b48f", suit: "#5a5d66", tube: "#d8dcc8" };
+const PAL = { floor: "#26282a", floor2: "#32363a", wall: "#15161a", tape: "#8f9a3a", pod: "#44484d", podLit: "#FF8B2E", vend: "#4a3b2f", cooler: "#5f7d8c", board: "#15161a", ink: "#ECEAE4", muted: "#A5A29B", skin: "#e8b48f", suit: "#5a5d66", tube: "#d8dcc8" };
 
 export function mountPod(container: HTMLElement, opts: {
   /** Called when the player enters an open pod. Resolve true when the ad completed. Placeholder today. */
@@ -73,7 +73,9 @@ export function mountPod(container: HTMLElement, opts: {
   let alive = true;
 
   function resize() {
-    const s = Math.max(1, Math.min(container.clientWidth / W, container.clientHeight / H));
+    // No floor of 1: on a 375px phone the container is narrower than the map,
+    // and refusing to scale down pushed the canvas out past the page gutter.
+    const s = Math.min(container.clientWidth / W, container.clientHeight / H);
     scale = s;
     canvas.width = W * s; canvas.height = H * s;
     canvas.style.width = `${W * s}px`; canvas.style.height = `${H * s}px`;

@@ -125,7 +125,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
   ctx.fillText(`best ${hud.best}`, WORLD_W / 2, 102);
   drawChase(ctx, hud, s.score, WORLD_W, "rgba(248,249,250,0.75)", "#FF8B2E");
 
-  if (!hud.started) {
+  if (!hud.started && hud.firstRun) {
     ctx.fillStyle = C.text;
     ctx.font = "bold 22px system-ui, sans-serif";
     ctx.fillText("DRUNK PIGEON", WORLD_W / 2, 190);
@@ -143,6 +143,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
     ctx.fillStyle = "rgba(248,249,250,0.8)";
     ctx.fillText(`${s.score} gaps. tap to go again.`, WORLD_W / 2, 315);
     if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 365); }
+    if (hud.sub) { ctx.font = "13px system-ui, sans-serif"; ctx.fillStyle = "rgba(248,249,250,0.75)"; ctx.fillText(hud.sub, WORLD_W / 2, 388); }
     ctx.fillText(`${(s.tick / 60).toFixed(1)}s of flying, ${s.gaps.length} buildings`, WORLD_W / 2, 340);
   }
 

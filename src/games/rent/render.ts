@@ -75,7 +75,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
   ctx.font = "14px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`days dodged · best ${hud.best}`, RENT_W / 2, 102);
   drawChase(ctx, hud, s.dodged, RENT_W, "rgba(26,20,16,0.7)", "#c1440e");
 
-  if (!hud.started) {
+  if (!hud.started && hud.firstRun) {
     ctx.fillStyle = C.text; ctx.font = "bold 22px system-ui, sans-serif"; ctx.fillText("RENT'S DUE", RENT_W / 2, 300);
     ctx.font = "15px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.8)"; ctx.fillText("tap to jump. he is faster than you think.", RENT_W / 2, 326);
   }
@@ -86,6 +86,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillText(`${s.dodged} days. tap to go again.`, RENT_W / 2, 320);
     if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 346); }
+    if (hud.sub) { ctx.font = "13px system-ui, sans-serif"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, RENT_W / 2, 368); }
   }
   ctx.restore();
 }
