@@ -3,7 +3,7 @@ const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-119
 const p = await b.newPage({ viewport: { width: 420, height: 1600 }, deviceScaleFactor: 1 });
 const errs = [];
 p.on("pageerror", e => errs.push(String(e)));
-await p.goto("file:///home/claude/5050/dist/index.html");
+await p.goto("file:///home/claude/5050-games/dist/index.html");
 await p.waitForTimeout(1500);
 await p.screenshot({ path: "/tmp/claude-0/-home-claude/d4ae8718-6c94-5c70-925d-a2e103014186/scratchpad/shot.png", fullPage: true });
 console.log("errors:", errs);
