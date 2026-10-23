@@ -25,6 +25,17 @@ const perfectTol = (speed: number, n: number) => Math.max(3, speed * perfectTick
 /** A clean drop hands width back, so precision compounds instead of just delaying the end. */
 const PERFECT_REGAIN = 6;
 const MIN_W = 6;
+/**
+ * Ticks at the start of a run during which a tap will not drop the block.
+ *
+ * The block does not move until the run has started, and the very first tap
+ * both starts the run AND dropped the block in the same instant. So the first
+ * floor was always placed wherever the block happened to be parked, with no
+ * chance to aim: the second layer got sheared on every single run and looked
+ * "auto cut off". Half a second of grace means the first tap only wakes the
+ * game up, and the player's next tap is the first real drop.
+ */
+const ARM_TICKS = 32;
 
 export const VIOLATIONS = [
   "no fire exit", "load-bearing drywall", "raccoon tenant", "mystery stain", "wifi is a rumour",
@@ -45,13 +56,16 @@ export interface SlumlordState {
 
 export const slumlordSim: Sim<SlumlordState> = {
   id: "slumlord",
-  version: 4,
+  version: 5,
   tickRate: 60,
 
   init(seed) {
     const rng = new Rng(seed);
     const base: Floor = { x: (SL_W - BASE_W) / 2, w: BASE_W, v: -1, perfect: false };
-    return { rng, tick: 0, floors: [base], cur: { x: 0, w: BASE_W, dir: 1, speed: 2.4, v: rng.int(0, VIOLATIONS.length - 1) }, dead: false, perfectStreak: 0 };
+    // Parked square on the base, not jammed in the left corner. Before the run
+    // starts nothing moves, so the corner position rendered as a second floor
+    // hanging half off the building before the player had touched anything.
+    return { rng, tick: 0, floors: [base], cur: { x: base.x, w: BASE_W, dir: 1, speed: 2.4, v: rng.int(0, VIOLATIONS.length - 1) }, dead: false, perfectStreak: 0 };
   },
 
   step(s, tap) {
@@ -67,7 +81,7 @@ export const slumlordSim: Sim<SlumlordState> = {
     // block, so it was taking the shot for the player and shearing most of the
     // floor off. The three minute run cap already bounds a run; this only ever
     // cost people tower.
-    if (!tap) return;
+    if (!tap || s.tick <= ARM_TICKS) return;
 
     const top = s.floors[s.floors.length - 1]!;
     const left = Math.max(c.x, top.x);

@@ -95,7 +95,10 @@
   #podscreen { position: relative; min-height: 360px; }
   #podscreen canvas { margin: auto; }
   .fakead { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); color: #ECEAE4; font-family: var(--mono); font-size: 18px; }
-  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 20; margin: 0; }
+  /* Above body.playing .stage (40) and .exit (41): a sheet opened from the
+     full-bleed toggle used to render UNDERNEATH the game, so tapping Ranked
+     while signed out looked like a dead button. */
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 60; margin: 0; }
   .sheet[hidden] { display: none; }
   .sheet-in { width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--rule); padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; position: relative; }
   .step-login:not([hidden]), .step-adult:not([hidden]) { display: grid; gap: 10px; }
@@ -148,14 +151,25 @@
           font-family: var(--mono); font-size: 16px; line-height: 1; width: 40px; height: 40px; border-radius: 999px;
           border: 1px solid rgba(255,255,255,.22); background: rgba(10,12,16,.55); color: #cfd3d8; cursor: pointer; }
   body.playing .exit { display: block; }
-  body.playing .mode { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 10px; }
+  /* Top-left, mirroring the exit at top-right. At the bottom it sat directly
+     on the mobile browser's URL bar, so half the hit area belonged to Chrome
+     and the other half to the restart tap. The in-canvas score is centred,
+     so this corner is free. */
+  body.playing .mode { top: calc(8px + env(safe-area-inset-top, 0px)); bottom: auto; left: 8px; z-index: 41; }
+  body.playing .mode button { font-size: 12px; padding: 13px 15px; }
   #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: calc(100dvh - 104px); display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: manipulation; }
   #screen canvas { touch-action: none; }
   /* Mode rides on top of the sky instead of taking a row of its own. */
   .mode { position: absolute; bottom: 8px; left: 8px; z-index: 3; display: flex; border: 1px solid rgba(255,255,255,.3); background: rgba(10,12,16,.72); touch-action: none; }
   /* Out of the way while the run is live: one stray tap here used to drop a
      modal over a ranked run in progress. */
-  #screen.live ~ .mode, .stage:has(#screen.live) .mode { opacity: 0; pointer-events: none; }
+  /* Gone, not merely transparent, while the run is live: one stray tap here
+     used to drop a modal over a ranked run in progress. `.mode` now sits
+     after `#screen` in the markup so this plain sibling match works in every
+     browser (it silently did nothing when `.mode` came first, and the
+     `:has()` fallback left the pill present-but-untappable on the death
+     screen, which is the state you actually want to switch mode from). */
+  #screen.live ~ .mode { visibility: hidden; }
   .mode button { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 12px 13px; background: transparent; color: #E6E9EC; border: 0; cursor: pointer; min-height: 44px; }
   .mode button[aria-pressed="true"] { background: #ECEAE4; color: #161615; }
   .mode button[data-m="ranked"] { color: var(--accent); font-weight: 700; }
@@ -203,12 +217,12 @@
   <div class="toast" id="status" role="status" aria-live="polite" hidden></div>
 
   <div class="stage">
+    <div id="screen"></div>
     <div class="mode" id="mode">
       <button aria-pressed="true" data-m="practice">Practice</button>
       <button aria-pressed="false" data-m="ranked">Ranked</button>
     </div>
     <button class="exit" id="exit" aria-label="back to the menu">&#10005;</button>
-    <div id="screen"></div>
   </div>
 
   <button class="share" id="share" hidden></button>

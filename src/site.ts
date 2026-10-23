@@ -197,11 +197,21 @@ function show(g: GameKey) {
 function paintMode() {
   for (const x of modeEl.querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.m === mode));
 }
+/**
+ * Any sheet opened while the game is full-bleed drops you back to the normal
+ * page first. A modal over an edge-to-edge canvas has nothing behind it to
+ * orient you, and on mobile it read as the Ranked button being broken.
+ */
+function openSheet(prep?: () => void) {
+  document.body.classList.remove("playing");
+  prep?.();
+  sheet.hidden = false;
+}
 function setMode(m: typeof mode) {
   // Open the sheet but leave the toggle showing the mode you are ACTUALLY in,
   // otherwise pressing Ranked looks like a button that did nothing.
-  if (m === "ranked" && !profile) { sheet.hidden = false; paintMode(); return; }
-  if (m === "ranked" && profile && !profile.is_adult) { sheet.hidden = false; showAdultStep(); paintMode(); return; }
+  if (m === "ranked" && !profile) { openSheet(); paintMode(); return; }
+  if (m === "ranked" && profile && !profile.is_adult) { openSheet(showAdultStep); paintMode(); return; }
   mode = m;
   seedCache.length = 0; activeRun = null; void refillSeed();
   paintMode();
@@ -259,7 +269,7 @@ const account = $<HTMLFormElement>("account");
 const nick = account.querySelector("#nick") as HTMLInputElement;
 signinLink.addEventListener("click", (e) => {
   e.preventDefault();
-  if (!profile) { sheet.hidden = false; return; }
+  if (!profile) { openSheet(); return; }
   const locked = profile.handle_locked;
   nick.value = profile.handle; nick.disabled = locked; $("nick-save").hidden = locked;
   $("nick-h").textContent = locked ? `You are ${profile.handle}.` : "Your nickname.";

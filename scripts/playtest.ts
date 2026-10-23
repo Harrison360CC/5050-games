@@ -117,7 +117,9 @@ function playSlum(seed: number, sk: Skill): { score: number; cause: string; tick
     if (pressAt < 0) {
       const toAlign = (top.x - c.x) / (c.dir * c.speed);
       if (toAlign >= 0 && toAlign <= 12) {
-        pressAt = s.tick + Math.max(0, Math.round(toAlign + gauss(br) * sk.press));
+        // A drop inside the arming window is swallowed by the sim, so a bot
+        // that "presses" there would look like a miss it never made.
+        pressAt = Math.max(33, s.tick + Math.max(0, Math.round(toAlign + gauss(br) * sk.press)));
       }
     }
     const tap = pressAt === s.tick;
