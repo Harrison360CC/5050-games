@@ -14,10 +14,12 @@ import SEED from "../../seed.json";
 import LEDGER from "../../ledger.json";
 import type { Replay } from "../../src/sim/types";
 
-interface Env { SUPABASE_URL: string; SUPABASE_SERVICE_KEY: string }
+interface Env { SUPABASE_URL: string; SUPABASE_SERVICE_KEY: string; COURSE_SALT?: string }
 
 const GAMES = new Set(["pigeon", "rent", "slumlord"]);
-const RUN_TTL_MS = 25 * 60 * 1000;
+// A run is capped at 3 minutes by RUN_TICKS. The old 25 minute TTL handed a
+// player 22 spare minutes to solve the course they had just been issued.
+const RUN_TTL_MS = 6 * 60 * 1000;
 const MAX_RUNS_PER_MIN = 12;
 
 export const onRequest: PagesFunction<Env> = async (ctx) => {
@@ -55,7 +57,7 @@ async function startRun(req: Request, env: Env) {
   // courses in the same order.
   const week = weekKey();
   const mine = await sb(env, `runs?user_id=eq.${user.id}&game=eq.${game}&week=eq.${week}&select=id`);
-  const seed = courseSeed(week, game, mine.length);
+  const seed = courseSeed(week, game, mine.length, env.COURSE_SALT ?? "");
   const [row] = await sb(env, "runs", {
     method: "POST",
     body: { user_id: user.id, game, seed, week, sim_version: SIMS[game]?.version ?? null, ...provenance(req) },
@@ -196,9 +198,24 @@ async function complain(req: Request, env: Env) {
 }
 
 /** Stable 32-bit seed for (week, game, run number). Pure, so it is reproducible. */
-export function courseSeed(week: string, game: string, index: number): number {
+/**
+ * The week's Nth course for a given game. Same for everyone, by design.
+ *
+ * `salt` is a server secret and it is load-bearing. Without it this is a pure
+ * function of three public values -- the week, the game, and your own run
+ * count -- over fifteen lines of FNV-1a, and the sims ship in the browser
+ * bundle. So anyone could compute every course they would be issued for the
+ * rest of the week, solve each one offline at leisure, and post pre-planned
+ * taps. The wall-clock check in finishRun does not catch that: it is a LOWER
+ * bound, so waiting out the claimed duration before submitting passes it.
+ *
+ * Publish the week's seeds in the ledger after a payout. That keeps the
+ * "everyone played the same courses" claim checkable without handing out
+ * next week's answers in advance.
+ */
+export function courseSeed(week: string, game: string, index: number, salt = ""): number {
   let h = 0x811c9dc5;
-  for (const ch of `${week}|${game}|${index}`) {
+  for (const ch of `${week}|${game}|${index}|${salt}`) {
     h ^= ch.charCodeAt(0);
     h = Math.imul(h, 0x01000193) >>> 0;
   }

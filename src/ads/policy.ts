@@ -92,6 +92,25 @@ export class AdPolicy {
    * offer that affects play; callers pass ranked=true to get a hard "no" for
    * any continue-style reward.
    */
+  /**
+   * For a surface with no runs, which today means the Loyalty Pod.
+   *
+   * `canOfferRewarded` enforces two run-pacing rules ("one per run", "not on
+   * consecutive runs") whose job is to avoid interrupting play. On a surface
+   * where nothing is being played they are not just meaningless, they are
+   * fatal: the pod called `canOfferRewarded` BEFORE `onRunStart`, so on the
+   * first pod of a session `lastRewardedOfferRun === runIndex - 1` compared
+   * -1 to -1 and refused. The pod was the only caller in the codebase, so the
+   * rewarded path never fired for anyone, ever. Every visitor who walked into
+   * an open pod was told the pods were closed for the night.
+   *
+   * Off-play surfaces get the daily cap and nothing else.
+   */
+  canOfferRewardedOffPlay(): boolean {
+    this.rollDay();
+    return this.daily.rewarded < AD_RULES.MAX_REWARDED_PER_DAY;
+  }
+
   canOfferRewarded(opts: { ranked: boolean; rewardAffectsPlay: boolean }): boolean {
     this.rollDay();
     if (opts.ranked && opts.rewardAffectsPlay) return false;

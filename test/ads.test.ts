@@ -70,3 +70,17 @@ test("rewarded: never a play-affecting offer in ranked, one per run, not consecu
   p.onRunStart(); p.onRunStart();
   assert.equal(p.canOfferRewarded({ ranked: false, rewardAffectsPlay: true }), false); // daily cap
 });
+
+test("off-play surfaces can offer a rewarded ad on the very first interaction", () => {
+  // Regression: the pod called canOfferRewarded before onRunStart, so the
+  // "not consecutive runs" rule compared -1 to -1 and refused. Nobody ever
+  // saw an ad in the Loyalty Pod.
+  let saved: ReturnType<typeof JSON.parse> | null = null;
+  const p = new AdPolicy({ load: () => saved, save: (d) => { saved = d; } });
+  assert.equal(p.canOfferRewardedOffPlay(), true, "first interaction must be allowed");
+  for (let i = 0; i < AD_RULES.MAX_REWARDED_PER_DAY; i++) {
+    assert.equal(p.canOfferRewardedOffPlay(), true);
+    p.rewardedOffered(); p.rewardedCompleted();
+  }
+  assert.equal(p.canOfferRewardedOffPlay(), false, "the daily cap still binds");
+});

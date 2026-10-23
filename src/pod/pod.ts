@@ -106,11 +106,13 @@ export function mountPod(container: HTMLElement, opts: {
     busy = true;
     px.tx = px.x; px.ty = px.y + T; // step back out
     if (!p.open) { say(p.gag!, 2600); busy = false; return; }
-    if (!policy.canOfferRewarded({ ranked: false, rewardAffectsPlay: false })) {
+    // Off-play gate: the run-pacing rules in canOfferRewarded refused the
+    // first pod of every session, so nobody has ever seen an ad in here.
+    if (!policy.canOfferRewardedOffPlay()) {
       say(`PODS CLOSED FOR THE NIGHT. ${AD_RULES.MAX_REWARDED_PER_DAY} A DAY. COME BACK TOMORROW, ASSET.`, 3000);
       busy = false; return;
     }
-    policy.onRunStart(); policy.rewardedOffered();
+    policy.rewardedOffered();
     say(`ENTERING ${p.sign}. THE AD IS 30 SECONDS. THE HAT IS FOREVER.`, 0);
     const ok = await opts.showAd({ id: p.id, reward: p.reward });
     if (ok) {
