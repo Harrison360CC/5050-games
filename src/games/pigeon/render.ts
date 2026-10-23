@@ -1,4 +1,4 @@
-import { PIGEON, WORLD_H, WORLD_W, type PigeonState } from "../../sim/pigeon";
+import { PIGEON, WORLD_H, WORLD_W, pigeonY, type PigeonState } from "../../sim/pigeon";
 
 const C = {
   sky: "#1b1f2a",
@@ -20,6 +20,7 @@ const DEATH_LINES = ["splat.", "the pigeon has had enough.", "while they're out 
 export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: number, hud: { best: number; started: boolean; seed: number }) {
   ctx.save();
   ctx.scale(scale, scale);
+  const py = pigeonY(s);
 
   // sky
   const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
@@ -66,8 +67,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
 
   // pigeon
   const px = PIGEON.PIGEON_X;
-  const py = s.y;
-  const tilt = Math.max(-0.5, Math.min(0.9, s.vy * 0.08)) + s.wobble * 0.3;
+  const tilt = Math.max(-0.5, Math.min(0.9, s.vy * 0.08)) + (py - s.y) * 0.012;
   ctx.save();
   ctx.translate(px, py);
   ctx.rotate(tilt);

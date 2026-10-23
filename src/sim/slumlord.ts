@@ -12,7 +12,15 @@ export const SL_W = 360;
 export const SL_H = 640;
 export const FLOOR_H = 22;
 export const BASE_W = 160;
-const PERFECT = 4;
+/**
+ * Tolerance is a TIMING window, not a pixel one, so speeding up alone doesn't
+ * make it unfair. The window itself narrows as the tower climbs, so there is
+ * always a height that beats you, however good your thumbs are.
+ */
+const perfectTicks = (n: number) => Math.max(0.8, 2.4 - n * 0.004);
+const perfectTol = (speed: number, n: number) => Math.max(3, speed * perfectTicks(n));
+/** A clean drop hands width back, so precision compounds instead of just delaying the end. */
+const PERFECT_REGAIN = 6;
 const MIN_W = 6;
 
 export const VIOLATIONS = [
@@ -34,7 +42,7 @@ export interface SlumlordState {
 
 export const slumlordSim: Sim<SlumlordState> = {
   id: "slumlord",
-  version: 1,
+  version: 2,
   tickRate: 60,
 
   init(seed) {
@@ -59,14 +67,17 @@ export const slumlordSim: Sim<SlumlordState> = {
     const overlap = right - left;
     if (overlap < MIN_W) { s.dead = true; return; }
 
-    const perfect = Math.abs(c.x - top.x) <= PERFECT;
-    const landed: Floor = perfect ? { x: top.x, w: top.w, v: c.v, perfect: true } : { x: left, w: overlap, v: c.v, perfect: false };
+    const perfect = Math.abs(c.x - top.x) <= perfectTol(c.speed, s.floors.length);
+    const landed: Floor = perfect
+      ? { x: top.x, w: Math.min(BASE_W, top.w + PERFECT_REGAIN), v: c.v, perfect: true }
+      : { x: left, w: overlap, v: c.v, perfect: false };
     s.floors.push(landed);
     s.perfectStreak = perfect ? s.perfectStreak + 1 : 0;
 
     // next floor: same width as landed, faster, from a random side
     const n = s.floors.length;
-    const speed = Math.min(7, 2.4 + n * 0.16);
+    // no cap: the tower eventually outruns any pair of thumbs, so runs end on skill
+    const speed = 2.2 + n * 0.055;
     const dir: 1 | -1 = s.rng.next() < 0.5 ? 1 : -1;
     s.cur = { x: dir === 1 ? 0 : SL_W - landed.w, w: landed.w, dir, speed, v: s.rng.int(0, VIOLATIONS.length - 1) };
   },

@@ -19,6 +19,7 @@ export interface RentState {
   rng: Rng;
   tick: number;
   dist: number;        // world px travelled
+  dodged: number;      // obstacles cleared: this is the score
   y: number;           // player's feet y (RENT_GROUND when on ground)
   vy: number;
   onGround: boolean;
@@ -30,29 +31,53 @@ export interface RentState {
 const PLAYER_X = 70;
 const PLAYER_W = 22;
 const PLAYER_H = 44;
-const GRAVITY = 0.62;
-const JUMP_VY = -12.2;
-const BASE_SPEED = 4.2;
+const GRAVITY = 0.72;
+const JUMP_VY = -13.5;
+/** Exposed so the playtest bot derives its jump timing from the real physics. */
+export const RENT_TUNE = { gravity: GRAVITY, jumpVy: JUMP_VY };
+/** Ticks airborne for a full jump. Spacing is derived from this so a landing always fits. */
+const HANG = Math.ceil((2 * Math.abs(JUMP_VY)) / GRAVITY);
+const BASE_SPEED = 3.8;
 
+/** Size ramps with progress: the first minute is winnable by anyone. */
 const KINDS: { kind: ObstacleKind; w: number; h: number; minScore: number }[] = [
-  { kind: "notice", w: 18, h: 26, minScore: 0 },
-  { kind: "cone", w: 20, h: 30, minScore: 0 },
-  { kind: "couch", w: 54, h: 30, minScore: 6 },
-  { kind: "ex", w: 20, h: 48, minScore: 12 },
+  { kind: "notice", w: 16, h: 18, minScore: 0 },
+  { kind: "cone", w: 20, h: 26, minScore: 4 },
+  { kind: "couch", w: 48, h: 30, minScore: 12 },
+  { kind: "ex", w: 20, h: 42, minScore: 22 },
 ];
 
+/** No cap. It keeps getting faster, so every run ends on reaction time, not luck. */
 export function rentSpeed(dist: number) {
-  // no soft cap: like the dino game, it keeps getting faster until reaction time fails
-  return Math.min(18, BASE_SPEED + dist / 900);
+  return BASE_SPEED + dist / 1500;
+}
+
+/**
+ * Could a player clear something `span` wide and `h` tall at this speed?
+ * Pure geometry from the jump arc. The spawner refuses to create anything
+ * that fails this, so no run is ever ended by an unjumpable spawn.
+ */
+export function clearable(span: number, h: number, speed: number): boolean {
+  let t = 0, y = 0, vy = JUMP_VY, up = -1, down = -1;
+  while (t < 300) {
+    vy += GRAVITY; y += vy; t++;
+    const ht = -y;
+    if (ht >= h + 5 && up < 0) up = t;
+    if (up > 0 && ht < h + 5) { down = t; break; }
+    if (ht <= 0 && t > 2) { down = t; break; }
+  }
+  if (up < 0 || down < 0) return false;
+  // needs a few ticks of slack either side so it is not frame-perfect
+  return (down - up) - (span + 16) / speed >= 5;
 }
 
 export const rentSim: Sim<RentState> = {
   id: "rent",
-  version: 1,
+  version: 2,
   tickRate: 60,
 
   init(seed) {
-    return { rng: new Rng(seed), tick: 0, dist: 0, y: RENT_GROUND, vy: 0, onGround: true, obstacles: [], nextSpawn: 420, dead: false };
+    return { rng: new Rng(seed), tick: 0, dist: 0, dodged: 0, y: RENT_GROUND, vy: 0, onGround: true, obstacles: [], nextSpawn: 420, dead: false };
   },
 
   step(s, tap) {
@@ -69,18 +94,37 @@ export const rentSim: Sim<RentState> = {
     }
 
     if (s.dist >= s.nextSpawn) {
-      const score = Math.floor(s.dist / 60);
-      const pool = KINDS.filter((k) => score >= k.minScore);
-      const k = pool[s.rng.int(0, pool.length - 1)]!;
-      s.obstacles.push({ kind: k.kind, x: RENT_W + 20, w: k.w, h: k.h, passed: false });
-      // gap shrinks with speed but stays jumpable
-      const gap = s.rng.int(200, 380) + speed * 14;
+      const pool = KINDS.filter((k) => s.dodged >= k.minScore);
+      // Clusters are the real difficulty: two or three things you must clear in ONE jump.
+      // The chance and the size grow with how far you've got, never with luck alone.
+      const clusterOdds = Math.min(0.6, Math.max(0, (s.dodged - 10) * 0.016));
+      let n = 1;
+      if (s.rng.next() < clusterOdds) n = s.dodged > 60 && s.rng.next() < 0.2 ? 4 : s.dodged > 30 && s.rng.next() < 0.35 ? 3 : 2;
+      const group: Obstacle[] = [];
+      let x = RENT_W + 20;
+      for (let i = 0; i < n; i++) {
+        const k = pool[s.rng.int(0, pool.length - 1)]!;
+        group.push({ kind: k.kind, x, w: k.w, h: k.h, passed: false });
+        x += k.w + s.rng.int(14, 40);
+      }
+      // fairness guard: drop pieces off the back until the group is jumpable
+      while (group.length > 1) {
+        const last = group[group.length - 1]!;
+        const span = last.x + last.w - group[0]!.x;
+        const h = Math.max(...group.map((g) => g.h));
+        if (clearable(span, h, speed)) break;
+        group.pop();
+      }
+      for (const g of group) s.obstacles.push(g);
+      x = group[group.length - 1]!.x + group[group.length - 1]!.w;
+      const span = x - (RENT_W + 20);
+      const gap = span + speed * (HANG + 6) + s.rng.int(0, 160);
       s.nextSpawn = s.dist + gap;
     }
 
     for (const o of s.obstacles) {
       o.x -= speed;
-      if (!o.passed && o.x + o.w < PLAYER_X) o.passed = true;
+      if (!o.passed && o.x + o.w < PLAYER_X) { o.passed = true; s.dodged++; }
     }
     while (s.obstacles.length && s.obstacles[0]!.x + s.obstacles[0]!.w < -20) s.obstacles.shift();
 
@@ -93,7 +137,7 @@ export const rentSim: Sim<RentState> = {
   },
 
   isDead: (s) => s.dead,
-  score: (s) => Math.floor(s.dist / 60),
+  score: (s) => s.dodged,
 };
 
 export const RENT = { PLAYER_X, PLAYER_W, PLAYER_H };

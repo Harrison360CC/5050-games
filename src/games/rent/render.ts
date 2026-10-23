@@ -27,7 +27,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
   for (let i = -1; i < 5; i++) { const x = i * 110 - off2; const h = 70 + ((i * 37) % 50); ctx.fillRect(x, RENT_GROUND - h, 60, h); }
 
   // landlord in the background, closer as speed rises (purely cosmetic)
-  const close = Math.min(1, (rentSpeed(s.dist) - 4.2) / 5.3);
+  const close = Math.min(1, (rentSpeed(s.dist) - 3.8) / 7.0);
   const lx = 10 + close * 20, ly = RENT_GROUND - 28;
   ctx.fillStyle = C.ink; ctx.fillRect(lx, ly - 20, 14, 28); ctx.fillStyle = C.skin; ctx.fillRect(lx + 2, ly - 30, 10, 10);
   ctx.fillStyle = C.ink; ctx.font = "9px system-ui, sans-serif"; ctx.textAlign = "left"; ctx.fillText("LANDLORD", lx - 4, ly - 34);
@@ -62,7 +62,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
 
   // HUD
   ctx.fillStyle = C.text; ctx.textAlign = "center";
-  ctx.font = "bold 48px system-ui, sans-serif"; ctx.fillText(String(Math.floor(s.dist / 60)), RENT_W / 2, 80);
+  ctx.font = "bold 48px system-ui, sans-serif"; ctx.fillText(String(s.dodged), RENT_W / 2, 80);
   ctx.font = "14px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`days dodged · best ${hud.best}`, RENT_W / 2, 102);
 
   if (!hud.started) {
@@ -74,7 +74,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
     ctx.fillStyle = C.paper; ctx.font = "bold 24px system-ui, sans-serif";
     ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, RENT_W / 2, 285);
     ctx.font = "15px system-ui, sans-serif";
-    ctx.fillText(`${Math.floor(s.dist / 60)} days. tap to go again.`, RENT_W / 2, 320);
+    ctx.fillText(`${s.dodged} days. tap to go again.`, RENT_W / 2, 320);
   }
   ctx.restore();
 }

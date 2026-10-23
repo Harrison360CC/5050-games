@@ -16,7 +16,7 @@ function botRun(seed: number): { replay: Replay; score: number } {
     pigeonSim.step(s, tap);
     if (tap) { taps.push(s.tick); lastTap = s.tick; }
   }
-  return { replay: { game: "pigeon", version: 1, seed, taps, endTick: s.tick }, score: s.score };
+  return { replay: { game: "pigeon", version: pigeonSim.version, seed, taps, endTick: s.tick }, score: s.score };
 }
 
 test("replay reproduces the recorded score exactly, for many seeds", () => {
@@ -45,7 +45,7 @@ test("extra fake taps change the outcome and get caught", () => {
 });
 
 test("inhuman tap rate is rejected without replaying", () => {
-  const r = verify({ game: "pigeon", version: 1, seed: 1, taps: [10, 11, 12], endTick: 100 });
+  const r = verify({ game: "pigeon", version: pigeonSim.version, seed: 1, taps: [10, 11, 12], endTick: 100 });
   assert.equal(r.ok, false);
   assert.match((r as any).reason, /inhuman/);
 });
