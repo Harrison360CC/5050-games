@@ -171,6 +171,7 @@ function show(g: GameKey) {
   unmount?.();
   seedCache.length = 0; activeRun = null;
   shareBtn.hidden = true;
+  document.body.classList.remove("playing");
   unmount = mountGame(screen, GAMES[g], {
     seed: takeSeed,
     onRun,
@@ -186,6 +187,7 @@ function show(g: GameKey) {
       };
     },
     ready: () => mode !== "ranked" || seedCache.length > 0 || activeRun !== null,
+    onStart: () => document.body.classList.add("playing"),
   });
   void refillSeed();
   renderChips(); renderPot(); renderTop();
@@ -335,6 +337,8 @@ function offerShare(score: number) {
     } catch { /* they changed their mind, which is allowed */ }
   };
 }
+
+$("exit").addEventListener("click", () => document.body.classList.remove("playing"));
 
 const streak = bumpStreak();
 function paintMeta() {

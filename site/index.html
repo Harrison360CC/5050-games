@@ -132,6 +132,21 @@
      every player and nobody gets a bigger field than anybody else. All we do
      is give it as much of the screen as the chrome allows. */
   .stage { position: relative; }
+  /* Playing: the shell gets out of the way and the game takes the screen.
+     The 360x640 world is unchanged, so everyone still sees exactly the same
+     field of play. It just stops being letterboxed into a third of a phone. */
+  body.playing .top, body.playing .nav, body.playing .tabs,
+  body.playing .potline, body.playing .board, body.playing .share { display: none; }
+  body.playing { padding: 0; }
+  body.playing .stage { position: fixed; inset: 0; z-index: 40; background: #0f1116; display: flex; align-items: center; justify-content: center; }
+  /* Explicit height: as a flex item with only an aspect-ratio it sized from
+     its own content and never grew. */
+  body.playing #screen { height: 100svh; width: auto; max-width: 100vw; max-height: 100svh; border: 0; }
+  .exit { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); right: 8px; z-index: 41; display: none;
+          font-family: var(--mono); font-size: 16px; line-height: 1; width: 40px; height: 40px; border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.22); background: rgba(10,12,16,.55); color: #cfd3d8; cursor: pointer; }
+  body.playing .exit { display: block; }
+  body.playing .mode { top: calc(8px + env(safe-area-inset-top, 0px)); left: 8px; }
   #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: calc(100dvh - 104px); display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: manipulation; }
   #screen canvas { touch-action: none; }
   /* Mode rides on top of the sky instead of taking a row of its own. */
@@ -187,6 +202,7 @@
       <button aria-pressed="true" data-m="practice">Practice</button>
       <button aria-pressed="false" data-m="ranked">Ranked</button>
     </div>
+    <button class="exit" id="exit" aria-label="back to the menu">&#10005;</button>
     <div id="screen"></div>
   </div>
 

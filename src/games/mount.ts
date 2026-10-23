@@ -24,6 +24,9 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
    *  until it is true, so a ranked run can never start without a server seed
    *  and silently turn out not to count. */
   ready?: () => boolean;
+  /** Fires the first time a run actually starts, so the shell can get out of
+   *  the way. The world stays 360x640 for everyone; it just gets more screen. */
+  onStart?: () => void;
 }): () => void {
   const canvas = document.createElement("canvas");
   canvas.style.display = "block";
@@ -39,6 +42,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   let alive = true;
   let note = "";
   let firstRun = true;
+  let announced = false;
 
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
@@ -68,6 +72,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
 
   function loop(now: number) {
     if (!alive) return;
+    if (runner.started && !announced) { announced = true; opts.onStart?.(); }
     // Nothing to draw while the tab is in the background. Saves battery and
     // stops the tick accumulator building up a catch-up burst on return.
     if (document.hidden) { runner.frame(now); requestAnimationFrame(loop); return; }
