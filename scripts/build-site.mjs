@@ -10,7 +10,7 @@ const html = readFileSync("site/index.html", "utf8").replace("<!--JS-->", () => 
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/index.html", html);
 // static pages, served at clean URLs by Cloudflare Pages (/rules -> rules.html)
-for (const p of ["rules", "privacy", "ledger"]) copyFileSync(`site/${p}.html`, `dist/${p}.html`);
+for (const p of ["rules", "rules-history", "privacy", "ledger"]) copyFileSync(`site/${p}.html`, `dist/${p}.html`);
 copyFileSync("site/ads.txt", "dist/ads.txt");
 copyFileSync("site/manifest.webmanifest", "dist/manifest.webmanifest");
 mkdirSync("dist/icons", { recursive: true });
