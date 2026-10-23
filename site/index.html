@@ -51,7 +51,9 @@
   .item .soon { font-family: var(--mono); font-size: 12px; }
   a.item { text-decoration: none; color: inherit; }
   a.item .soon { color: var(--accent-text, var(--accent)); font-weight: 600; }
-  .sw.mug { background: var(--accent); }
+  a.item { grid-template-columns: 64px 1fr auto; }
+  .item img.sw { width: 64px; height: 64px; object-fit: cover; background: #e9e7e2; }
+  .item .price { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: 6px; }
   .chip-pot { font-weight: 500; opacity: .75; margin-left: 4px; }
   .tab[aria-selected="true"] .chip-pot { opacity: .85; }
   .hint { font-size: 13px; color: var(--muted); margin: 0; }
@@ -166,7 +168,7 @@
     <div class="panel">
       <div class="pot"><div class="n">50%</div><div class="l">of every item's profit goes into that game's pot</div></div>
       <div class="shop">
-        <a class="item" href="https://360-creative-consulting-shop.fourthwall.com/products/a-mug" target="_blank" rel="noopener"><div class="sw mug"></div><div><b>A Mug</b><span>5050 house line. Holds coffee. Half the profit goes into the pot.</span></div><span class="soon">buy</span></a>
+        <a class="item" href="https://360-creative-consulting-shop.fourthwall.com/products/a-mug" target="_blank" rel="noopener"><img class="sw" src="https://imgproxy.fourthwall.dev/UkPM0k0OEcbQRvsl1_dqiWmb7KvnaLn6May3r8e_CGM/w:1920/sm:1/enc/bAo5V9gVP0dVn1zt/Wz7FyKABYd1aU58b/6Kpf4Qu4FLuqyxVz/h7P9BC03fLmQkrJi/-qqNRPBI_onYubB8/8sKaK25HR-zb0fhJ/yyI6qq_kiJnOONFl/DezOXv_cpxeS1aYk/wK_jeiq5mgosbDi5/mgBCU3gGyqQUVMEF/7Im5T8HXQ0TNIleS/SVPB3DAE7Jpx4m9b/aiIinffTIdRs2RPO/yO9yStrmu7P_i8ve/VqUlRHucxQc.jpg" alt="a white mug with a black handle that says a mug." loading="lazy" width="64" height="64"><div><b>a mug.<span class="price">$18.95 USD</span></b><span>It says "a mug." on it so there's no confusion. 11oz or 15oz. Half the profit goes into the pot.</span></div><span class="soon">buy</span></a>
         <div class="item"><div class="sw"></div><div><b>Drunk Pigeon</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
         <div class="item"><div class="sw"></div><div><b>Rent's Due</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
         <div class="item"><div class="sw"></div><div><b>Slumlord</b><span>shirts, hats</span></div><span class="soon">soon</span></div>
