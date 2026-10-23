@@ -41,18 +41,17 @@ export interface SlumlordState {
   cur: { x: number; w: number; dir: 1 | -1; speed: number; v: number };
   dead: boolean;
   perfectStreak: number;
-  since: number; // ticks the current floor has been swinging
 }
 
 export const slumlordSim: Sim<SlumlordState> = {
   id: "slumlord",
-  version: 3,
+  version: 4,
   tickRate: 60,
 
   init(seed) {
     const rng = new Rng(seed);
     const base: Floor = { x: (SL_W - BASE_W) / 2, w: BASE_W, v: -1, perfect: false };
-    return { rng, tick: 0, floors: [base], cur: { x: 0, w: BASE_W, dir: 1, speed: 2.4, v: rng.int(0, VIOLATIONS.length - 1) }, dead: false, perfectStreak: 0, since: 0 };
+    return { rng, tick: 0, floors: [base], cur: { x: 0, w: BASE_W, dir: 1, speed: 2.4, v: rng.int(0, VIOLATIONS.length - 1) }, dead: false, perfectStreak: 0 };
   },
 
   step(s, tap) {
@@ -64,12 +63,11 @@ export const slumlordSim: Sim<SlumlordState> = {
     if (c.x <= 0) { c.x = 0; c.dir = 1; }
     if (c.x + c.w >= SL_W) { c.x = SL_W - c.w; c.dir = -1; }
 
-    s.since++;
-    // Deadline: dawdle and the floor goes down where it is. Deterministic, one
-    // input, and it stops a patient player from stacking for twenty minutes.
-    const deadline = Math.max(70, 170 - s.floors.length);
-    const forced = s.since >= deadline;
-    if (!tap && !forced) return;
+    // No auto-drop. It fired after 2.8s, which is less than two sweeps of the
+    // block, so it was taking the shot for the player and shearing most of the
+    // floor off. The three minute run cap already bounds a run; this only ever
+    // cost people tower.
+    if (!tap) return;
 
     const top = s.floors[s.floors.length - 1]!;
     const left = Math.max(c.x, top.x);
@@ -93,7 +91,6 @@ export const slumlordSim: Sim<SlumlordState> = {
     const speed = Math.min(9, 2.2 + n * 0.055);
     const dir: 1 | -1 = s.rng.next() < 0.5 ? 1 : -1;
     s.cur = { x: dir === 1 ? 0 : SL_W - landed.w, w: landed.w, dir, speed, v: s.rng.int(0, VIOLATIONS.length - 1) };
-    s.since = 0;
   },
 
   isDead: (s) => s.dead,

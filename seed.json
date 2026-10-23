@@ -1,6 +1,6 @@
 {
-  "_what": "Founder's seed per game per week, in cents. Harrison sets this; it shows on the site as 'seed (Harrison)'. Soft cap 200 until real ad revenue shows up. Change the numbers, commit, push; Cloudflare redeploys in about a minute.",
+  "_what": "Founder's seed per game per week, in cents. Harrison sets this; it shows on the site as 'seed (Harrison)'. They differ per game on purpose: three identical numbers look like a placeholder. Soft cap 200 until real ad revenue shows up. Change the numbers, commit, push; Cloudflare redeploys in about a minute.",
   "pigeon": 169,
-  "rent": 169,
-  "slumlord": 169
+  "rent": 142,
+  "slumlord": 188
 }

@@ -33,7 +33,7 @@ function slumBot(seed: number): { replay: Replay; score: number } {
     slumlordSim.step(s, tap);
     if (tap) { taps.push(s.tick); lastTap = s.tick; }
   }
-  return { replay: { game: "slumlord", version: rentSim.version, seed, taps, endTick: s.tick }, score: slumlordSim.score(s) };
+  return { replay: { game: "slumlord", version: slumlordSim.version, seed, taps, endTick: s.tick }, score: slumlordSim.score(s) };
 }
 
 test("rent: replay reproduces score for 100 seeds and bot scores > 0", () => {
