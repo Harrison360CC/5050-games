@@ -70,7 +70,8 @@ const randomSeed = () => (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0;
 async function fetchSeed(): Promise<SeedEntry> {
   if (mode === "ranked" && profile) {
     try {
-      const r = await api<{ runId: string; seed: number }>("/run/start", { game: current });
+      const r = await api<{ runId: string; seed: number; course?: number }>("/run/start", { game: current });
+      if (r.course) say(`ranked course ${r.course}. everyone gets the same one.`, 2500);
       return { runId: r.runId, seed: r.seed };
     } catch (e) {
       say(`ranked unavailable: ${(e as Error).message}. playing practice.`);

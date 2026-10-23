@@ -48,9 +48,16 @@ async function startRun(req: Request, env: Env) {
   const since = new Date(Date.now() - 60_000).toISOString();
   const recent = await sb(env, `runs?user_id=eq.${user.id}&started_at=gte.${since}&select=id`);
   if (recent.length >= MAX_RUNS_PER_MIN) return json({ error: "slow down" }, 429);
-  const seed = crypto.getRandomValues(new Uint32Array(1))[0]!;
-  const [row] = await sb(env, "runs", { method: "POST", body: { user_id: user.id, game, seed, week: weekKey() } });
-  return json({ runId: row.id, seed });
+  // Everyone's Nth ranked run of the week on a given game gets the SAME seed.
+  // Abandoning a run to fish for an easy course gains you nothing, because the
+  // next seed is already decided and is the same one everyone else faces. It
+  // also means we can say, on the record, that every entrant played the same
+  // courses in the same order.
+  const week = weekKey();
+  const mine = await sb(env, `runs?user_id=eq.${user.id}&game=eq.${game}&week=eq.${week}&select=id`);
+  const seed = courseSeed(week, game, mine.length);
+  const [row] = await sb(env, "runs", { method: "POST", body: { user_id: user.id, game, seed, week } });
+  return json({ runId: row.id, seed, course: mine.length + 1 });
 }
 
 async function finishRun(req: Request, env: Env) {
@@ -124,6 +131,18 @@ async function complain(req: Request, env: Env) {
   if (!email || !body || body.length > 2000) return json({ error: "need an email and a complaint" }, 400);
   await sb(env, "complaints", { method: "POST", body: { who, email, body } });
   return json({ ok: true });
+}
+
+/** Stable 32-bit seed for (week, game, run number). Pure, so it is reproducible. */
+export function courseSeed(week: string, game: string, index: number): number {
+  let h = 0x811c9dc5;
+  for (const ch of `${week}|${game}|${index}`) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  // one extra avalanche so adjacent indices do not look related
+  h ^= h >>> 15; h = Math.imul(h, 0x2545f491) >>> 0; h ^= h >>> 13;
+  return h >>> 0;
 }
 
 export function weekKey(d = new Date()): string {
