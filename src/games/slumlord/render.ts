@@ -76,6 +76,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
     ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, SL_W / 2, 245);
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillText(`${s.floors.length - 1} floors. tap to go again.`, SL_W / 2, 280);
+    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, SL_W / 2, 310); }
   }
   ctx.restore();
 }

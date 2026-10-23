@@ -2,7 +2,7 @@ import type { Replay, Sim } from "../sim/types";
 import { Runner } from "./runner";
 
 /** What the renderer is told about the run, beyond the sim state. */
-export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean; waiting: boolean }
+export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean; waiting: boolean; note: string }
 
 export interface GameDef<S> {
   sim: Sim<S>;
@@ -37,6 +37,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   let scale = 1;
   let submitted = false;
   let alive = true;
+  let note = "";
 
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
@@ -55,7 +56,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   function onTap(e: Event) {
     e.preventDefault();
     if (opts.ready && !opts.ready()) return; // still fetching a ranked course
-    if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; return; }
+    if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; note = ""; return; }
     runner.tap();
   }
   // e.repeat guard: OS key-repeat fires ~30Hz, which would otherwise record a
@@ -69,12 +70,14 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
     runner.frame(now);
     if (runner.dead && !submitted) {
       submitted = true;
+      const t = opts.target?.();
+      note = deathNote(runner.score, best, t?.ranked ? t.score : 0);
       if (runner.score > best) { best = runner.score; lsSet(key, String(best)); }
       opts.onRun(runner.replay(), runner.score);
     }
     const t = opts.target?.() ?? { score: 0, handle: "", ranked: false };
     const waiting = !(opts.ready?.() ?? true);
-    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting });
+    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting, note });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -89,3 +92,16 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
 
 function lsGet(k: string) { try { return localStorage.getItem(k); } catch { return null; } }
 function lsSet(k: string, v: string) { try { localStorage.setItem(k, v); } catch {} }
+
+/**
+ * The line under "you died". A near miss is the whole reason anyone taps again,
+ * so say exactly how near it was rather than just restating the score.
+ */
+function deathNote(score: number, best: number, target: number): string {
+  if (target > 0 && score > target) return "that is the score to beat. for now.";
+  if (score > best && best > 0) return `new best by ${score - best}.`;
+  if (score > 0 && best === 0) return "that is your best. admittedly a low bar.";
+  if (target > 0 && target - score <= Math.max(3, Math.round(target * 0.12))) return `${target - score + 1} more and the lead is yours.`;
+  if (best > 0 && best - score <= 2) return `${best - score} off your best. go again.`;
+  return "";
+}

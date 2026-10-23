@@ -25,6 +25,35 @@ let activeRun: { runId: string; seed: number } | null = null;
 const best: Record<GameKey, number> = { pigeon: 0, rent: 0, slumlord: 0 };
 
 const fmt = (c: number) => "$" + (c / 100).toFixed(2);
+
+/** Ms until the week closes (Monday 00:00 UTC). The deadline is the reason to
+ *  come back before Sunday, so it is on screen rather than buried in the rules. */
+function untilWeekEnd(): string {
+  const now = new Date();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dow = end.getUTCDay() || 7;                 // Mon=1..Sun=7
+  end.setUTCDate(end.getUTCDate() + (8 - dow));     // next Monday 00:00 UTC
+  const ms = end.getTime() - now.getTime();
+  const h = Math.floor(ms / 3600000), d = Math.floor(h / 24);
+  if (d >= 1) return `${d}d ${h % 24}h left`;
+  if (h >= 1) return `${h}h ${Math.floor((ms % 3600000) / 60000)}m left`;
+  return `${Math.max(1, Math.floor(ms / 60000))}m left`;
+}
+
+/** Days in a row you have shown up. Kept on the device; no account, no email. */
+function bumpStreak(): number {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const last = localStorage.getItem("5050.lastDay");
+    let n = Number(localStorage.getItem("5050.streak") || 0);
+    if (last === today) return n || 1;
+    const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    n = last === y ? n + 1 : 1;
+    localStorage.setItem("5050.lastDay", today);
+    localStorage.setItem("5050.streak", String(n));
+    return n;
+  } catch { return 1; }
+}
 const say = (m: string, ms = 3500) => { status.textContent = m; status.hidden = !m; if (ms) setTimeout(() => { if (status.textContent === m) status.hidden = true; }, ms); };
 
 function renderChips() {
@@ -36,7 +65,8 @@ function renderChips() {
 }
 function renderPot() {
   const p = POTS[current];
-  potEl.querySelector(".n")!.innerHTML = `${fmt(p.cents)}<small>${p.confirmed ? "confirmed" : "est."}</small>`;
+  potEl.querySelector(".n")!.textContent = fmt(p.cents);
+  potEl.querySelector(".l")!.textContent = p.confirmed ? "pot · confirmed" : "pot";
 }
 function renderTop() {
   const rows = TOP[current];
@@ -255,6 +285,16 @@ complain.addEventListener("submit", async (e) => {
 });
 complain.querySelector(".close")!.addEventListener("click", () => { complain.hidden = true; });
 $("complain-link").addEventListener("click", (e) => { e.preventDefault(); complain.hidden = false; paintComplaint(); });
+
+const streak = bumpStreak();
+function paintMeta() {
+  const el = document.getElementById("potline");
+  if (el) el.innerHTML = `<b>${untilWeekEnd()}</b> · top score when the week closes takes the pot${streak > 1 ? ` · <b>day ${streak}</b> in a row` : ""} · <a href="/rules">how it works</a>`;
+  const wk = document.getElementById("wk");
+  if (wk) wk.textContent = untilWeekEnd();
+}
+paintMeta();
+setInterval(paintMeta, 60000);
 
 show("pigeon");
 void flushOutbox();

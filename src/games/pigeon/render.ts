@@ -122,10 +122,10 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
   if (!hud.started) {
     ctx.fillStyle = C.text;
     ctx.font = "bold 22px system-ui, sans-serif";
-    ctx.fillText("DRUNK PIGEON", WORLD_W / 2, 300);
+    ctx.fillText("DRUNK PIGEON", WORLD_W / 2, 190);
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillStyle = "rgba(248,249,250,0.8)";
-    ctx.fillText("tap to flap. it gets worse.", WORLD_W / 2, 326);
+    ctx.fillText("tap to flap. it gets worse.", WORLD_W / 2, 216);
   }
   if (s.dead) {
     ctx.fillStyle = "rgba(0,0,0,0.55)";
@@ -136,6 +136,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillStyle = "rgba(248,249,250,0.8)";
     ctx.fillText(`${s.score} gaps. tap to go again.`, WORLD_W / 2, 315);
+    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 315); }
     ctx.fillText(`${(s.tick / 60).toFixed(1)}s of flying, ${s.gaps.length} buildings`, WORLD_W / 2, 340);
   }
 

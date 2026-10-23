@@ -78,6 +78,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
     ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, RENT_W / 2, 285);
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillText(`${s.dodged} days. tap to go again.`, RENT_W / 2, 320);
+    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 315); }
   }
   ctx.restore();
 }

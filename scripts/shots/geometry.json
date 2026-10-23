@@ -1,0 +1,197 @@
+{
+  "iphoneSE": {
+    "viewportH": 667,
+    "docH": 975,
+    "top": {
+      "top": 0,
+      "bottom": 44,
+      "h": 44,
+      "w": 343
+    },
+    "nav": {
+      "top": 56,
+      "bottom": 117,
+      "h": 61,
+      "w": 343
+    },
+    "tabs": {
+      "top": 129,
+      "bottom": 164,
+      "h": 35,
+      "w": 343
+    },
+    "pot": {
+      "top": 176,
+      "bottom": 245,
+      "h": 69,
+      "w": 343
+    },
+    "mode": {
+      "top": 257,
+      "bottom": 292,
+      "h": 35,
+      "w": 343
+    },
+    "screen": {
+      "top": 304,
+      "bottom": 771,
+      "h": 467,
+      "w": 343
+    },
+    "canvas": {
+      "top": 305,
+      "bottom": 770,
+      "h": 465,
+      "w": 262
+    },
+    "board": {
+      "top": 783,
+      "bottom": 899,
+      "h": 116,
+      "w": 343
+    },
+    "foot": {
+      "top": 911,
+      "bottom": 951,
+      "h": 40,
+      "w": 343
+    },
+    "potText": "$0.00est.\nthis week's pot · top score Sunday night takes it",
+    "chipText": [
+      "Drunk Pigeon $0.00",
+      "Rent's Due $0.00",
+      "Slumlord $0.00"
+    ],
+    "boardHeader": "TOP 3 THIS WEEK\nWK 44 · CLOSES SUN 23:59 UTC"
+  },
+  "iphone15": {
+    "viewportH": 852,
+    "docH": 1085,
+    "top": {
+      "top": 0,
+      "bottom": 44,
+      "h": 44,
+      "w": 361
+    },
+    "nav": {
+      "top": 56,
+      "bottom": 98,
+      "h": 42,
+      "w": 361
+    },
+    "tabs": {
+      "top": 110,
+      "bottom": 145,
+      "h": 35,
+      "w": 361
+    },
+    "pot": {
+      "top": 157,
+      "bottom": 226,
+      "h": 69,
+      "w": 361
+    },
+    "mode": {
+      "top": 238,
+      "bottom": 273,
+      "h": 35,
+      "w": 361
+    },
+    "screen": {
+      "top": 285,
+      "bottom": 882,
+      "h": 596,
+      "w": 361
+    },
+    "canvas": {
+      "top": 287,
+      "bottom": 881,
+      "h": 594,
+      "w": 334
+    },
+    "board": {
+      "top": 894,
+      "bottom": 1010,
+      "h": 116,
+      "w": 361
+    },
+    "foot": {
+      "top": 1022,
+      "bottom": 1061,
+      "h": 40,
+      "w": 361
+    },
+    "potText": "$0.00est.\nthis week's pot · top score Sunday night takes it",
+    "chipText": [
+      "Drunk Pigeon $0.00",
+      "Rent's Due $0.00",
+      "Slumlord $0.00"
+    ],
+    "boardHeader": "TOP 3 THIS WEEK\nWK 44 · CLOSES SUN 23:59 UTC"
+  },
+  "android": {
+    "viewportH": 740,
+    "docH": 1026,
+    "top": {
+      "top": 0,
+      "bottom": 44,
+      "h": 44,
+      "w": 328
+    },
+    "nav": {
+      "top": 56,
+      "bottom": 117,
+      "h": 61,
+      "w": 328
+    },
+    "tabs": {
+      "top": 129,
+      "bottom": 164,
+      "h": 35,
+      "w": 328
+    },
+    "pot": {
+      "top": 176,
+      "bottom": 245,
+      "h": 69,
+      "w": 328
+    },
+    "mode": {
+      "top": 257,
+      "bottom": 292,
+      "h": 35,
+      "w": 328
+    },
+    "screen": {
+      "top": 304,
+      "bottom": 822,
+      "h": 518,
+      "w": 328
+    },
+    "canvas": {
+      "top": 305,
+      "bottom": 821,
+      "h": 516,
+      "w": 290
+    },
+    "board": {
+      "top": 834,
+      "bottom": 950,
+      "h": 116,
+      "w": 328
+    },
+    "foot": {
+      "top": 962,
+      "bottom": 1002,
+      "h": 40,
+      "w": 328
+    },
+    "potText": "$0.00est.\nthis week's pot · top score Sunday night takes it",
+    "chipText": [
+      "Drunk Pigeon $0.00",
+      "Rent's Due $0.00",
+      "Slumlord $0.00"
+    ],
+    "boardHeader": "TOP 3 THIS WEEK\nWK 44 · CLOSES SUN 23:59 UTC"
+  }
+}

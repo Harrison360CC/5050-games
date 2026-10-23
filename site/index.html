@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9545759448534604" crossorigin="anonymous"></script>
 <title>5050 Games</title>
+<meta name="description" content="Three stupid games. Highest score when the week ends takes half the ad money. No purchase, no catch, barely any money.">
+<meta name="theme-color" content="#161615">
+<meta name="color-scheme" content="dark light">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="icon" href="/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="50/50">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="5050 Games">
+<meta property="og:title" content="5050 Games">
+<meta property="og:description" content="Three stupid games. Highest score when the week ends takes half the ad money.">
+<meta property="og:url" content="https://play5050games.com/">
+<meta property="og:image" content="https://play5050games.com/icons/og.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@700&display=swap">
 <style>
   /* Layout: one-screen app. Tabs on top, pot line, game, top 3. Nothing else on this page. */
@@ -22,20 +38,34 @@
   :root[data-theme="light"] { --bg: #EDEBE6; --surface: #FAF9F6; --ink: #1A1A1A; --muted: #5F5D58; --rule: #C6C3BC; --accent: #F26B0A; --on-accent: #1A1A1A; color-scheme: light; }
 
   * { box-sizing: border-box; }
+  button, .tab, .nav-b, .who { touch-action: manipulation; }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.4;
-    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 24px;
+    padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-block: 0 max(20px, env(safe-area-inset-bottom, 0px));
+    /* A game you tap fast: no double-tap zoom, no pull-to-refresh, no text selection. */
+    overscroll-behavior-y: contain;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none; touch-action: manipulation;
   }
-  .app { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .app { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
 
-  .top { display: flex; align-items: center; justify-content: space-between; padding-block: 12px 4px; }
-  .wm { font-family: var(--pixel); font-size: 20px; color: var(--ink); text-decoration: none; }
+  /* One slim bar: mark, the pot for the game you are on, and who you are. */
+  .top { display: flex; align-items: center; gap: 10px; padding-block: 8px 2px; min-height: 40px; }
+  .wm { font-family: var(--pixel); font-size: 17px; color: var(--ink); text-decoration: none; flex: 0 0 auto; }
   .wm b { color: var(--accent); }
-  .links { display: flex; gap: 14px; font-family: var(--mono); font-size: 12px; }
-  .links a { color: var(--muted); text-decoration: none; }
+  .potbar { flex: 1 1 auto; display: flex; align-items: baseline; gap: 6px; justify-content: center; min-width: 0; }
+  .potbar .n { font-family: var(--mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; color: var(--accent); }
+  .potbar .l { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .who { flex: 0 0 auto; font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink); text-decoration: none;
+         max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+         border: 1px solid var(--accent); padding: 7px 10px; min-height: 36px; display: flex; align-items: center; }
+  .who:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .nav { display: flex; border-bottom: 1px solid var(--rule); }
-  .nav-b { flex: 1; font-family: var(--body); font-size: 15px; font-weight: 700; padding: 10px 4px; background: transparent; color: var(--muted); border: 0; border-bottom: 3px solid transparent; cursor: pointer; margin-bottom: -1px; }
+  .nav { display: flex; gap: 4px; }
+  .nav-b { flex: 1; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 7px 4px; background: transparent; color: var(--muted); border: 0; border-bottom: 2px solid var(--rule); cursor: pointer; min-height: 32px; }
   .nav-b[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
   .nav-b:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   section { display: flex; flex-direction: column; gap: 12px; }
@@ -51,6 +81,10 @@
   .product p { margin: 6px 0 12px; font-size: 14px; color: var(--muted); }
   .product .buy { display: block; text-align: center; padding: 12px; background: var(--accent); color: #161615; font-weight: 700; font-size: 15px; }
   .hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .potline { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
+  .potline a { color: var(--muted); }
+  .potline b { color: var(--ink); font-weight: 700; }
+  .chip-pot { display: block; font-weight: 500; opacity: .7; font-size: 11px; }
   #podscreen { position: relative; min-height: 360px; }
   #podscreen canvas { margin: auto; }
   .fakead { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); color: #ECEAE4; font-family: var(--mono); font-size: 18px; }
@@ -74,9 +108,9 @@
   .or { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: center; }
   .toast { font-family: var(--mono); font-size: 13px; padding: 8px 12px; background: var(--ink); color: var(--bg); }
   .toast[hidden] { display: none; }
-  .tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab { flex: 0 0 auto; font-family: var(--mono); font-size: 13px; font-weight: 600; padding: 8px 12px; border: 1px solid var(--rule); background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  /* Three games, three equal pills, always all visible. No horizontal scroll. */
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .tab { font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 8px 2px; border: 1px solid var(--rule); background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 36px; }
   .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
   .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -90,7 +124,17 @@
   .mode button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
   .mode button:focus-visible { outline: 2px solid var(--ink); outline-offset: -3px; }
 
-  #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: 70vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+  /* The world is a fixed 360x640 for everyone, so the view is identical for
+     every player and nobody gets a bigger field than anybody else. All we do
+     is give it as much of the screen as the chrome allows. */
+  .stage { position: relative; }
+  #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: calc(100dvh - 104px); display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: manipulation; }
+  #screen canvas { touch-action: none; }
+  /* Mode rides on top of the sky instead of taking a row of its own. */
+  .mode { position: absolute; top: 8px; left: 8px; z-index: 3; display: flex; border: 1px solid rgba(255,255,255,.22); background: rgba(10,12,16,.55); backdrop-filter: blur(6px); border-radius: 999px; overflow: hidden; }
+  .mode button { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 6px 11px; background: transparent; color: #cfd3d8; border: 0; cursor: pointer; min-height: 30px; }
+  .mode button[aria-pressed="true"] { background: var(--accent); color: #161615; }
+  .mode button:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
   #screen canvas { border-radius: 0 !important; }
   .placeholder { color: #A5A29B; font-family: var(--mono); font-size: 13px; text-align: center; padding: 24px; }
   .placeholder b { display: block; font-family: var(--body); font-size: 20px; color: #ECEAE4; margin-bottom: 6px; }
@@ -113,37 +157,37 @@
 <div class="app">
   <div class="top">
     <a class="wm" href="#">50<b>/</b>50</a>
-    <div class="links"><a href="/ledger">ledger</a><a href="/rules">rules</a><a href="#" id="signin-link">sign in</a></div>
+    <div class="potbar" id="pot"><span class="n">$0.00</span><span class="l">pot</span></div>
+    <a class="who" href="#" id="signin-link">sign in</a>
   </div>
 
   <nav class="nav" role="tablist">
-    <button class="nav-b" role="tab" aria-selected="true" data-s="games">Games</button>
-    <button class="nav-b" role="tab" aria-selected="false" data-s="pod">Loyalty Center</button>
-    <button class="nav-b" role="tab" aria-selected="false" data-s="shop">Shop</button>
+    <button class="nav-b" role="tab" aria-selected="true" data-s="games">GAMES</button>
+    <button class="nav-b" role="tab" aria-selected="false" data-s="pod">LOYALTY</button>
+    <button class="nav-b" role="tab" aria-selected="false" data-s="shop">SHOP</button>
   </nav>
 
   <section id="s-games">
   <div class="tabs" role="tablist">
-    <button class="tab" role="tab" aria-selected="true" data-g="pigeon">Drunk Pigeon <span class="chip-pot"></span></button>
-    <button class="tab" role="tab" aria-selected="false" data-g="rent">Rent's Due <span class="chip-pot"></span></button>
-    <button class="tab" role="tab" aria-selected="false" data-g="slumlord">Slumlord <span class="chip-pot"></span></button>
+    <button class="tab" role="tab" aria-selected="true" data-g="pigeon">Pigeon<span class="chip-pot"></span></button>
+    <button class="tab" role="tab" aria-selected="false" data-g="rent">Rent's Due<span class="chip-pot"></span></button>
+    <button class="tab" role="tab" aria-selected="false" data-g="slumlord">Slumlord<span class="chip-pot"></span></button>
   </div>
 
   <div class="toast" id="status" hidden></div>
-  <div class="pot" id="pot">
-    <div class="n">$0.00<small>est.</small></div>
-    <div class="l">this week's pot · top score Sunday night takes it</div>
+
+  <div class="stage">
+    <div class="mode" id="mode">
+      <button aria-pressed="true" data-m="practice">Practice</button>
+      <button aria-pressed="false" data-m="ranked">Ranked</button>
+    </div>
+    <div id="screen"></div>
   </div>
 
-  <div class="mode" id="mode">
-    <button aria-pressed="true" data-m="practice">Practice</button>
-    <button aria-pressed="false" data-m="ranked">Ranked</button>
-  </div>
-
-  <div id="screen"></div>
+  <p class="potline" id="potline">Top score when the week closes Sunday 23:59 UTC takes the pot. <a href="/rules">how it works</a></p>
 
   <div class="board" id="board">
-    <h2><span>Top 3 this week</span><span id="wk">wk 44 · closes Sun 23:59 UTC</span></h2>
+    <h2><span>Top 3 this week</span><span id="wk"></span></h2>
     <ol id="top"></ol>
     <div class="empty" id="empty">Nobody has scored yet. Technically, zero is winning.</div>
   </div>
