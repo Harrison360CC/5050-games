@@ -42,20 +42,14 @@
   section[hidden] { display: none; }
   .panel { display: flex; flex-direction: column; gap: 12px; }
   .screen-ph { background: #0f1116; border: 1px solid var(--rule); min-height: 320px; display: flex; justify-content: center; align-items: center; }
-  .shop { border: 1px solid var(--rule); background: var(--surface); }
-  .item { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--rule); }
-  .item:last-child { border-bottom: 0; }
-  .item .sw { width: 44px; height: 44px; background: var(--bg); border: 1px solid var(--rule); }
-  .item b { display: block; }
-  .item span { font-size: 13px; color: var(--muted); }
-  .item .soon { font-family: var(--mono); font-size: 12px; }
-  a.item { text-decoration: none; color: inherit; }
-  a.item .soon { color: var(--accent-text, var(--accent)); font-weight: 600; }
-  a.item { grid-template-columns: 64px 1fr auto; }
-  .item img.sw { width: 64px; height: 64px; object-fit: cover; background: #e9e7e2; }
-  .item .price { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-left: 6px; }
-  .chip-pot { font-weight: 500; opacity: .75; margin-left: 4px; }
-  .tab[aria-selected="true"] .chip-pot { opacity: .85; }
+  .product { display: block; background: var(--surface); border: 1px solid var(--rule); text-decoration: none; color: inherit; }
+  .product img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: #e9e7e2; border-bottom: 1px solid var(--rule); }
+  .product .pd { padding: 14px 14px 16px; }
+  .product .pn { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .product .pn b { font-size: 20px; }
+  .product .price { font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .product p { margin: 6px 0 12px; font-size: 14px; color: var(--muted); }
+  .product .buy { display: block; text-align: center; padding: 12px; background: var(--accent); color: #161615; font-weight: 700; font-size: 15px; }
   .hint { font-size: 13px; color: var(--muted); margin: 0; }
   #podscreen { position: relative; min-height: 360px; }
   #podscreen canvas { margin: auto; }
@@ -167,9 +161,14 @@
   <section id="s-shop" hidden>
     <div class="panel">
       <div class="pot"><div class="n">50%</div><div class="l">of the profit on anything sold here goes into the pots</div></div>
-      <div class="shop">
-        <a class="item" href="https://shop.play5050games.com/products/a-mug" target="_blank" rel="noopener"><img class="sw" src="https://imgproxy.fourthwall.dev/UkPM0k0OEcbQRvsl1_dqiWmb7KvnaLn6May3r8e_CGM/w:1920/sm:1/enc/bAo5V9gVP0dVn1zt/Wz7FyKABYd1aU58b/6Kpf4Qu4FLuqyxVz/h7P9BC03fLmQkrJi/-qqNRPBI_onYubB8/8sKaK25HR-zb0fhJ/yyI6qq_kiJnOONFl/DezOXv_cpxeS1aYk/wK_jeiq5mgosbDi5/mgBCU3gGyqQUVMEF/7Im5T8HXQ0TNIleS/SVPB3DAE7Jpx4m9b/aiIinffTIdRs2RPO/yO9yStrmu7P_i8ve/VqUlRHucxQc.jpg" alt="a white mug with a black handle that says a mug." loading="lazy" width="64" height="64"><div><b>a mug.<span class="price">$18.95 USD</span></b><span>It says "a mug." on it so there's no confusion. 11oz or 15oz. Half the profit goes into the pot.</span></div><span class="soon">buy</span></a>
-      </div>
+      <a class="product" href="https://360-creative-consulting-shop.fourthwall.com/products/a-mug" target="_blank" rel="noopener">
+        <img src="https://imgproxy.fourthwall.dev/UkPM0k0OEcbQRvsl1_dqiWmb7KvnaLn6May3r8e_CGM/w:1920/sm:1/enc/bAo5V9gVP0dVn1zt/Wz7FyKABYd1aU58b/6Kpf4Qu4FLuqyxVz/h7P9BC03fLmQkrJi/-qqNRPBI_onYubB8/8sKaK25HR-zb0fhJ/yyI6qq_kiJnOONFl/DezOXv_cpxeS1aYk/wK_jeiq5mgosbDi5/mgBCU3gGyqQUVMEF/7Im5T8HXQ0TNIleS/SVPB3DAE7Jpx4m9b/aiIinffTIdRs2RPO/yO9yStrmu7P_i8ve/VqUlRHucxQc.jpg" alt="a white mug with a black handle that says a mug." width="600" height="600">
+        <div class="pd">
+          <div class="pn"><b>a mug.</b><span class="price">$18.95 USD</span></div>
+          <p>It says "a mug." on it so there's no confusion. Holds coffee, tea, or pens if things don't work out. 11oz or 15oz. Half the profit goes into the pots.</p>
+          <span class="buy">buy the mug</span>
+        </div>
+      </a>
       <p class="hint">One item. More when there's a reason. "Profit" means what's left after printing, shipping and fees, and it shows up in the ledger once the first order ships.</p>
     </div>
   </section>
