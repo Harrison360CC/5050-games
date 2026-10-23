@@ -1,5 +1,6 @@
 import { Rng } from "./rng";
 import type { Sim } from "./types";
+import { RUN_TICKS } from "./limits";
 
 /**
  * Slumlord. A floor slides left-right; tap to drop it on the stack. Overhang is
@@ -17,7 +18,9 @@ export const BASE_W = 160;
  * make it unfair. The window itself narrows as the tower climbs, so there is
  * always a height that beats you, however good your thumbs are.
  */
-const perfectTicks = (n: number) => Math.max(0.8, 2.4 - n * 0.004);
+/** Never below ~2.5 ticks (42ms): any tighter and phone input latency, not skill,
+ *  decides who wins the week. */
+const perfectTicks = (n: number) => Math.max(2.5, 3.4 - n * 0.004);
 const perfectTol = (speed: number, n: number) => Math.max(3, speed * perfectTicks(n));
 /** A clean drop hands width back, so precision compounds instead of just delaying the end. */
 const PERFECT_REGAIN = 6;
@@ -38,28 +41,35 @@ export interface SlumlordState {
   cur: { x: number; w: number; dir: 1 | -1; speed: number; v: number };
   dead: boolean;
   perfectStreak: number;
+  since: number; // ticks the current floor has been swinging
 }
 
 export const slumlordSim: Sim<SlumlordState> = {
   id: "slumlord",
-  version: 2,
+  version: 3,
   tickRate: 60,
 
   init(seed) {
     const rng = new Rng(seed);
     const base: Floor = { x: (SL_W - BASE_W) / 2, w: BASE_W, v: -1, perfect: false };
-    return { rng, tick: 0, floors: [base], cur: { x: 0, w: BASE_W, dir: 1, speed: 2.4, v: rng.int(0, VIOLATIONS.length - 1) }, dead: false, perfectStreak: 0 };
+    return { rng, tick: 0, floors: [base], cur: { x: 0, w: BASE_W, dir: 1, speed: 2.4, v: rng.int(0, VIOLATIONS.length - 1) }, dead: false, perfectStreak: 0, since: 0 };
   },
 
   step(s, tap) {
     if (s.dead) return;
     s.tick++;
+    if (s.tick >= RUN_TICKS) { s.dead = true; return; }
     const c = s.cur;
     c.x += c.dir * c.speed;
     if (c.x <= 0) { c.x = 0; c.dir = 1; }
     if (c.x + c.w >= SL_W) { c.x = SL_W - c.w; c.dir = -1; }
 
-    if (!tap) return;
+    s.since++;
+    // Deadline: dawdle and the floor goes down where it is. Deterministic, one
+    // input, and it stops a patient player from stacking for twenty minutes.
+    const deadline = Math.max(70, 170 - s.floors.length);
+    const forced = s.since >= deadline;
+    if (!tap && !forced) return;
 
     const top = s.floors[s.floors.length - 1]!;
     const left = Math.max(c.x, top.x);
@@ -80,6 +90,7 @@ export const slumlordSim: Sim<SlumlordState> = {
     const speed = 2.2 + n * 0.055;
     const dir: 1 | -1 = s.rng.next() < 0.5 ? 1 : -1;
     s.cur = { x: dir === 1 ? 0 : SL_W - landed.w, w: landed.w, dir, speed, v: s.rng.int(0, VIOLATIONS.length - 1) };
+    s.since = 0;
   },
 
   isDead: (s) => s.dead,

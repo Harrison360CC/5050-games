@@ -1,4 +1,5 @@
 import type { Replay, Sim } from "../sim/types";
+import { MIN_TAP_GAP } from "../sim/limits";
 
 /**
  * Generic fixed-timestep driver + tap recorder. One per run. Works for any Sim.
@@ -24,6 +25,9 @@ export class Runner<S> {
 
   tap() {
     this.started = true;
+    // Swallow taps that land too close together instead of recording them. The
+    // player loses nothing: the run stays valid and only the extra tap is lost.
+    if (this.taps.length && this.tick + 1 - this.taps[this.taps.length - 1]! < MIN_TAP_GAP) return;
     this.pendingTap = true;
   }
 

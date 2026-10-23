@@ -1,5 +1,6 @@
 import { Rng } from "./rng";
 import type { Sim } from "./types";
+import { RUN_TICKS } from "./limits";
 
 /**
  * Drunk Pigeon sim. Pure, deterministic, no DOM, no Math.random, no Date.
@@ -33,6 +34,7 @@ export interface PigeonState {
   dead: boolean;
   scroll: number; // world px scrolled so far
   lastSpawn: number; // scroll value of the last spawn
+  lastGapY: number; // so the next gap is never placed somewhere you cannot get to
   /** Sway wave parameters, fixed for the run, derived from the seed. */
   w1: number; p1: number; w2: number; p2: number;
 }
@@ -77,18 +79,31 @@ export function pigeonY(s: PigeonState): number {
   return s.y + pigeonSway(s);
 }
 
-function spawnGap(rng: Rng, score: number): Gap {
+/**
+ * Place the next gap somewhere the player can actually fly to from the last
+ * one. Without this, two consecutive gaps can be further apart than the bird
+ * can climb or dive in the time available, and the run ends for a reason no
+ * input could have prevented. In a game with a pot, that is not acceptable.
+ */
+function spawnGap(rng: Rng, score: number, lastGapY: number): Gap {
   const gapH = gapHeight(score);
   const amp = swayAmp(score);
-  // keep the gap reachable: never put it so high or low that the sway alone kills you
   const minY = 50 + amp;
-  const maxY = GROUND_Y - gapH - 50 - amp;
-  return { x: WORLD_W + 10, gapY: rng.int(minY, Math.max(minY, maxY)), gapH, passed: false };
+  const maxY = Math.max(minY, GROUND_Y - gapH - 50 - amp);
+
+  const n = spacing(score) / pigeonSpeed(score); // ticks until this column arrives
+  const climb = 3.4 * n;                         // conservative sustained climb
+  const dive = 8 * n;                            // falling is easier than climbing
+  const slack = Math.max(0, gapH - 2 * PIGEON_R - 24);
+  const lo = Math.max(minY, lastGapY - climb - slack);
+  const hi = Math.min(maxY, lastGapY + dive + slack);
+  const gapY = hi > lo ? rng.int(lo, hi) : lo;
+  return { x: WORLD_W + 10, gapY, gapH, passed: false };
 }
 
 export const pigeonSim: Sim<PigeonState> = {
   id: "pigeon",
-  version: 2,
+  version: 3,
   tickRate: 60,
 
   init(seed) {
@@ -103,6 +118,7 @@ export const pigeonSim: Sim<PigeonState> = {
       dead: false,
       scroll: 0,
       lastSpawn: -140, // first column arrives quickly but not instantly
+      lastGapY: WORLD_H / 2 - 100,
       w1: 0.021 + rng.next() * 0.012,
       p1: rng.next() * Math.PI * 2,
       w2: 0.047 + rng.next() * 0.020,
@@ -113,6 +129,7 @@ export const pigeonSim: Sim<PigeonState> = {
   step(s, tap) {
     if (s.dead) return;
     s.tick++;
+    if (s.tick >= RUN_TICKS) { s.dead = true; return; }
 
     if (tap) s.vy = flapAt(s.score);
     s.vy = Math.min(MAX_VY, s.vy + GRAVITY);
@@ -121,7 +138,9 @@ export const pigeonSim: Sim<PigeonState> = {
     const speed = pigeonSpeed(s.score);
     s.scroll += speed;
     if (s.scroll - s.lastSpawn >= spacing(s.score)) {
-      s.gaps.push(spawnGap(s.rng, s.score));
+      const g = spawnGap(s.rng, s.score, s.lastGapY);
+      s.gaps.push(g);
+      s.lastGapY = g.gapY;
       s.lastSpawn = s.scroll;
     }
 

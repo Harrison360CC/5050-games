@@ -77,7 +77,7 @@ function playRent(seed: number, sk: Skill): { score: number; cause: string; tick
       const next = ahead[0];
       fire = false;
       if (next && s.onGround) {
-        const speed = rentSpeed(s.dist);
+        const speed = rentSpeed(s.tick);
         // a player sees a cluster as one thing to clear: group anything close behind
         let left = next.x, right = next.x + next.w, h = next.h;
         for (let i = 1; i < ahead.length; i++) {

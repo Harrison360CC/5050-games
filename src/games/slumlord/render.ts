@@ -1,3 +1,5 @@
+import type { Hud } from "../mount";
+import { drawChase } from "../hud";
 import { FLOOR_H, SL_H, SL_W, VIOLATIONS, type SlumlordState } from "../../sim/slumlord";
 
 const C = { sky: "#8fa3b8", sky2: "#c9d3dc", ground: "#4a4a4a", brick: "#9a5a3c", brick2: "#7d4730", window: "#f2d16b", frame: "#2a2420", text: "#1a1410", paper: "#f5efe0", ok: "#2e8b57", red: "#c62f2f" };
@@ -11,7 +13,7 @@ const DEATH_LINES = [
   "write it down. scrib doon.",
 ];
 
-export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, scale: number, hud: { best: number; started: boolean; seed: number }) {
+export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, scale: number, hud: Hud) {
   ctx.save();
   ctx.scale(scale, scale);
   const g = ctx.createLinearGradient(0, 0, 0, SL_H);
@@ -61,6 +63,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
   ctx.fillStyle = C.text; ctx.textAlign = "center";
   ctx.font = "bold 48px system-ui, sans-serif"; ctx.fillText(String(s.floors.length - 1), SL_W / 2, 80);
   ctx.font = "14px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`floors · best ${hud.best}`, SL_W / 2, 102);
+  drawChase(ctx, hud, s.floors.length - 1, SL_W, "rgba(26,20,16,0.7)", "#2e8b57");
 
   if (!hud.started) {
     ctx.fillStyle = C.text; ctx.font = "bold 22px system-ui, sans-serif"; ctx.fillText("SLUMLORD", SL_W / 2, 200);

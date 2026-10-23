@@ -1,3 +1,5 @@
+import type { Hud } from "../mount";
+import { drawChase } from "../hud";
 import { PIGEON, WORLD_H, WORLD_W, pigeonY, type PigeonState } from "../../sim/pigeon";
 
 const C = {
@@ -17,7 +19,7 @@ const C = {
 
 const DEATH_LINES = ["splat.", "the pigeon has had enough.", "while they're out partying btw.", "my reaction to that: nothing.", "i'm so sorry.", "write it down. scrib doon."];
 
-export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: number, hud: { best: number; started: boolean; seed: number }) {
+export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: number, hud: Hud) {
   ctx.save();
   ctx.scale(scale, scale);
   const py = pigeonY(s);
@@ -115,6 +117,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
   ctx.font = "14px system-ui, sans-serif";
   ctx.fillStyle = "rgba(248,249,250,0.6)";
   ctx.fillText(`best ${hud.best}`, WORLD_W / 2, 102);
+  drawChase(ctx, hud, s.score, WORLD_W, "rgba(248,249,250,0.75)", "#FF8B2E");
 
   if (!hud.started) {
     ctx.fillStyle = C.text;

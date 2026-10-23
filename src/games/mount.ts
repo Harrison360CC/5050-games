@@ -1,11 +1,14 @@
 import type { Replay, Sim } from "../sim/types";
 import { Runner } from "./runner";
 
+/** What the renderer is told about the run, beyond the sim state. */
+export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean }
+
 export interface GameDef<S> {
   sim: Sim<S>;
   worldW: number;
   worldH: number;
-  draw: (ctx: CanvasRenderingContext2D, s: S, scale: number, hud: { best: number; started: boolean; seed: number }) => void;
+  draw: (ctx: CanvasRenderingContext2D, s: S, scale: number, hud: Hud) => void;
 }
 
 /**
@@ -15,6 +18,8 @@ export interface GameDef<S> {
 export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   seed: () => number;
   onRun: (replay: Replay, claimedScore: number) => void;
+  /** The score to beat this week, and who holds it. Read fresh every frame. */
+  target?: () => { score: number; handle: string; ranked: boolean };
 }): () => void {
   const canvas = document.createElement("canvas");
   canvas.style.display = "block";
@@ -60,7 +65,8 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
       if (runner.score > best) { best = runner.score; lsSet(key, String(best)); }
       opts.onRun(runner.replay(), runner.score);
     }
-    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed });
+    const t = opts.target?.() ?? { score: 0, handle: "", ranked: false };
+    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

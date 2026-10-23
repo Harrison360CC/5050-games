@@ -111,7 +111,11 @@ function show(g: GameKey) {
   current = g;
   unmount?.();
   seedCache.length = 0; activeRun = null;
-  unmount = mountGame(screen, GAMES[g], { seed: takeSeed, onRun });
+  unmount = mountGame(screen, GAMES[g], {
+    seed: takeSeed,
+    onRun,
+    target: () => ({ score: TOP[current][0]?.score ?? 0, handle: TOP[current][0]?.handle ?? "", ranked: mode === "ranked" }),
+  });
   void refillSeed();
   renderChips(); renderPot(); renderTop();
   void loadLive();

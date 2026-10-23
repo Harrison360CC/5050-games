@@ -14,10 +14,10 @@ export type VerifyResult =
   | { ok: false; reason: string };
 
 /** Hard limits. Anything outside these is rejected before we even replay. */
-const MAX_TICKS = 60 * 60 * 20; // 20 minutes at 60Hz
+import { RUN_TICKS, MIN_TAP_GAP } from "./limits";
+const MAX_TICKS = RUN_TICKS;
 const MAX_TAPS = 20_000;
-/** Two taps closer than this (in ticks) is faster than any human. 60Hz, so 4 ticks = 66ms. */
-const MIN_TAP_GAP = 4;
+
 
 /**
  * Replay a run server-side and compute the score from scratch.

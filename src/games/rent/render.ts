@@ -1,3 +1,5 @@
+import type { Hud } from "../mount";
+import { drawChase } from "../hud";
 import { RENT, RENT_GROUND, RENT_H, RENT_W, rentSpeed, type RentState } from "../../sim/rent";
 
 const C = { sky: "#d9c7a3", sky2: "#b48f5c", far: "#8d6b47", bldg: "#5a3f2b", road: "#3a3230", line: "#d9c7a3", skin: "#e8b48f", boxers: "#4f8fd1", hair: "#2b1a12", ink: "#1a1410", paper: "#f5efe0", red: "#c62f2f", couch: "#7a4f8a", cone: "#f08a24", text: "#1a1410" };
@@ -11,7 +13,7 @@ const DEATH_LINES = [
   "write that one down. scrib doon.",
 ];
 
-export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: number, hud: { best: number; started: boolean; seed: number }) {
+export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: number, hud: Hud) {
   ctx.save();
   ctx.scale(scale, scale);
   const g = ctx.createLinearGradient(0, 0, 0, RENT_GROUND);
@@ -27,7 +29,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
   for (let i = -1; i < 5; i++) { const x = i * 110 - off2; const h = 70 + ((i * 37) % 50); ctx.fillRect(x, RENT_GROUND - h, 60, h); }
 
   // landlord in the background, closer as speed rises (purely cosmetic)
-  const close = Math.min(1, (rentSpeed(s.dist) - 3.8) / 7.0);
+  const close = Math.min(1, (rentSpeed(s.tick) - 3.8) / 7.0);
   const lx = 10 + close * 20, ly = RENT_GROUND - 28;
   ctx.fillStyle = C.ink; ctx.fillRect(lx, ly - 20, 14, 28); ctx.fillStyle = C.skin; ctx.fillRect(lx + 2, ly - 30, 10, 10);
   ctx.fillStyle = C.ink; ctx.font = "9px system-ui, sans-serif"; ctx.textAlign = "left"; ctx.fillText("LANDLORD", lx - 4, ly - 34);
@@ -64,6 +66,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
   ctx.fillStyle = C.text; ctx.textAlign = "center";
   ctx.font = "bold 48px system-ui, sans-serif"; ctx.fillText(String(s.dodged), RENT_W / 2, 80);
   ctx.font = "14px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`days dodged · best ${hud.best}`, RENT_W / 2, 102);
+  drawChase(ctx, hud, s.dodged, RENT_W, "rgba(26,20,16,0.7)", "#c1440e");
 
   if (!hud.started) {
     ctx.fillStyle = C.text; ctx.font = "bold 22px system-ui, sans-serif"; ctx.fillText("RENT'S DUE", RENT_W / 2, 300);
