@@ -21,6 +21,8 @@ let mode: "practice" | "ranked" = "practice";
 let profile: Profile | null = null;
 let unmount: (() => void) | null = null;
 let pod: ReturnType<typeof mountPod> | null = null;
+let adCancel: (() => void) | null = null;
+let announceT = 0;
 let activeRun: { runId: string; seed: number } | null = null;
 const best: Record<GameKey, number> = { pigeon: 0, rent: 0, slumlord: 0 };
 
@@ -315,9 +317,9 @@ function paintFx() {
   sb.textContent = `SOUND: ${pod.fx.prefs.sound ? "ON" : "OFF"}`;
   if (!pod.hasHaptics) {
     (hb as HTMLButtonElement).disabled = true;
-    hb.setAttribute("aria-pressed", "false");
+    hb.removeAttribute("aria-pressed");
     hb.textContent = "HAPTICS: N/A";
-    hb.title = "This browser has no vibration API. Safari on iOS never has.";
+    hb.setAttribute("aria-label", "Haptics unavailable: this browser has no vibration API");
     return;
   }
   hb.setAttribute("aria-pressed", String(pod.fx.prefs.haptics));
@@ -339,18 +341,51 @@ document.querySelector(".nav")!.addEventListener("click", (e) => {
     podScreen.innerHTML = "";
     const line = $("pod-say");
     pod = mountPod(podScreen, {
-      say: (m) => { line.textContent = m; },
-      showAd: () => new Promise((res) => {
+      say: (m) => {
+        line.textContent = m;
+        // Debounced. A polite live region queues, so eight hat-cycle taps in
+        // 1.4s produced roughly 30 seconds of uninterruptible speech. A burst
+        // now collapses to one announcement of the final state.
+        clearTimeout(announceT);
+        announceT = window.setTimeout(() => { $("pod-announce").textContent = m; }, 700);
+      },
+      // The placeholder used to own nothing: leaving the tab mid-advert left
+      // its setInterval running, so seven seconds later, sitting on GAMES, you
+      // had been granted the hat and charged one of three daily views for an
+      // advert nobody watched. Resolving "completed" without the network's own
+      // callback is also precisely what gets a publisher flagged, and this
+      // shape is what the real AdSense unit will be dropped into.
+      showAd: () => {
         const o = document.createElement("div"); o.className = "fakead"; let n = 5;
         o.textContent = `AD PLAYING. ${n}`; podScreen.appendChild(o);
-        const t = setInterval(() => { n--; o.textContent = n > 0 ? `AD PLAYING. ${n}` : "AD OVER."; if (n <= 0) { clearInterval(t); setTimeout(() => { o.remove(); res(true); }, 500); } }, 1000);
-      }),
+        let settle: (v: boolean) => void = () => {};
+        let t = 0, done = 0;
+        const stop = (ok: boolean) => { clearInterval(t); clearTimeout(done); o.remove(); settle(ok); };
+        const promise = new Promise<boolean>((res) => {
+          settle = res;
+          t = window.setInterval(() => {
+            n--; o.textContent = n > 0 ? `AD PLAYING. ${n}` : "AD OVER.";
+            if (n <= 0) { clearInterval(t); done = window.setTimeout(() => stop(true), 500); }
+          }, 1000);
+        });
+        adCancel = () => stop(false);
+        void promise.then(() => { adCancel = null; });
+        return promise;
+      },
     });
     paintFx();
   }
   // The pod runs a render loop and an AudioContext. Leaving it mounted behind a
   // hidden section is how the old build leaked a permanent rAF chain per visit.
-  if (s !== "pod" && pod) { pod.destroy(); pod = null; }
+  if (s !== "pod" && pod) { adCancel?.(); adCancel = null; pod.destroy(); pod = null; }
+  // Leaving the Games tab never unmounted the game, so mountGame's loop kept
+  // running at 60Hz behind a hidden section -- stepping physics for a game
+  // nobody was playing and reading canvas.offsetParent every frame, which
+  // turns into a forced synchronous layout the moment anything else dirties
+  // the DOM. That is the exact bug the pod rewrite was meant to end, sitting
+  // in the surface NEXT to it.
+  if (s !== "games") { unmount?.(); unmount = null; }
+  else if (!unmount) show(current);
 });
 
 // ---- complaints ----

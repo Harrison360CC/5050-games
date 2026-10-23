@@ -86,8 +86,11 @@ export function mountPod(container: HTMLElement, opts: {
   canvas.style.margin = "0 auto";
   canvas.style.imageRendering = "pixelated";
   canvas.style.touchAction = "pan-y";   // a vertical swipe still scrolls the page
-  canvas.setAttribute("role", "application");
-  canvas.setAttribute("aria-label", "Loyalty Pod corridor. Tap a pod to walk to it.");
+  canvas.setAttribute("role", "group");
+  canvas.tabIndex = 0;
+  canvas.setAttribute("aria-label",
+    `Loyalty Pod corridor. ${PODS.filter((p) => p.open).length} of ${PODS.length} pods open. ` +
+    "Left and right arrows to walk between pods, Enter to go in, H to change hat.");
   container.appendChild(canvas);
   const ctx = canvas.getContext("2d")!;
   const policy = new AdPolicy(browserCountStore("5050.ads"));
@@ -97,7 +100,9 @@ export function mountPod(container: HTMLElement, opts: {
   let scale = 2;
   let alive = true, onScreen = true, raf = 0, wakeUntil = 0, last = 0;
   let busy = false;
+  let frozen = false;   // true while the advert overlay is up
   let flickerAt = 0, flickerUntil = 0;
+  let flickTimer: ReturnType<typeof setTimeout> | null = null;
   const rm = matchMedia("(prefers-reduced-motion: reduce)");
   let reduceMotion = rm.matches;
   const onRM = () => { reduceMotion = rm.matches; wake(60); };
@@ -107,7 +112,10 @@ export function mountPod(container: HTMLElement, opts: {
   let target: Pod | null = null;   // the pod this walk was aimed at, if any
   let hats: string[] = [];
   let wearing = 0;
-  try { hats = JSON.parse(localStorage.getItem("5050.hats") || "[]"); } catch {}
+  try {
+    const raw = JSON.parse(localStorage.getItem("5050.hats") || "[]");
+    hats = Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
+  } catch { hats = []; }
 
   function readTheme() {
     const dark = !matchMedia("(prefers-color-scheme: light)").matches
@@ -122,7 +130,10 @@ export function mountPod(container: HTMLElement, opts: {
   function resize() {
     const w = container.clientWidth || 336;
     scale = Math.max(2, Math.floor(w / VIEW_W));           // integer, always
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    // Round, cap at 3. Capping at 2 on a 3x phone showed a 672px backing
+    // store across 1008 physical px, so a 1-unit detail alternated between 1
+    // and 2 physical pixels: exactly the mush this rewrite was meant to end.
+    const dpr = Math.min(3, Math.round(window.devicePixelRatio || 1));
     canvas.width = VIEW_W * scale * dpr;
     canvas.height = VIEW_H * scale * dpr;
     canvas.style.width = `${VIEW_W * scale}px`;
@@ -135,6 +146,7 @@ export function mountPod(container: HTMLElement, opts: {
 
   /** Keep the render loop alive for a while. Idle costs zero frames. */
   function wake(ms: number) {
+    if (frozen) return;            // an opaque advert is covering the canvas
     wakeUntil = performance.now() + ms;
     if (!raf && alive && onScreen && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(loop); }
   }
@@ -152,9 +164,13 @@ export function mountPod(container: HTMLElement, opts: {
     // Tapping yourself cycles the hat you are wearing. Costs nothing, and the
     // old 6x2 orange rectangle was the single most complained-about reward on
     // the site partly because you could never see it properly.
-    if (hats.length > 1 && Math.abs(wx - me.x) < 12 && wy > 110) {
-      wearing = (wearing + 1) % hats.length;
+    if (hats.length >= 1 && Math.abs(wx - me.x) < 12 && wy > 110) {
       fx.tick(); fx.buzz(25);
+      if (hats.length === 1) {
+        opts.say("YOU OWN ONE HAT. IT IS ALREADY ON YOUR HEAD.");
+        wake(400); return;
+      }
+      wearing = (wearing + 1) % hats.length;
       opts.say(`NOW WEARING: ${hats[wearing]!.toUpperCase()}. IT STILL DOES NOTHING.`);
       wake(400); return;
     }
@@ -168,8 +184,39 @@ export function mountPod(container: HTMLElement, opts: {
     me.face = me.tx < me.x ? -1 : 1;
     me.walking = true;
     fx.tick(); fx.buzz(20);
-    wake(9000);
+    // Sized to the actual walk rather than the longest possible one: a tap
+    // that moved the figure 1px used to paint 542 identical frames.
+    wake(Math.abs(me.tx - me.x) / 0.1 + 900);
   }, { passive: false });
+
+  canvas.addEventListener("keydown", (e) => {
+    if (busy) return;
+    const k = e.key;
+    if (k === "ArrowLeft" || k === "ArrowRight") {
+      const dir = k === "ArrowRight" ? 1 : -1;
+      const next = PODS.filter((q) => dir > 0 ? q.x > me.x + 4 : q.x < me.x - 4)
+        .sort((a, b) => dir * (a.x - b.x))[0];
+      if (!next) return;
+      e.preventDefault();
+      fx.unlock(); fx.hum(true);
+      target = next; me.tx = next.x; me.face = dir as 1 | -1; me.walking = true;
+      fx.tick(); fx.buzz(20);
+      wake(Math.abs(me.tx - me.x) / 0.1 + 900);
+    } else if (k === "Enter" || k === " ") {
+      const p = podAt(me.x);
+      if (!p) return;
+      e.preventDefault();
+      fx.unlock(); void enter(p);
+    } else if (k === "h" || k === "H") {
+      if (!hats.length) return;
+      e.preventDefault();
+      fx.unlock(); fx.tick(); fx.buzz(25);
+      if (hats.length === 1) { opts.say("YOU OWN ONE HAT. IT IS ALREADY ON YOUR HEAD."); return; }
+      wearing = (wearing + 1) % hats.length;
+      opts.say(`NOW WEARING: ${hats[wearing]!.toUpperCase()}. IT STILL DOES NOTHING.`);
+      wake(400);
+    }
+  });
 
   async function enter(p: Pod) {
     if (busy) return;
@@ -191,7 +238,15 @@ export function mountPod(container: HTMLElement, opts: {
     fx.doorOpen();
     opts.say(`ENTERING ${p.sign}. THE ADVERT IS SHORT. THE HAT IS FOREVER.`);
     wake(600);
+    // Nothing behind the overlay is visible, so stop painting it. `busy` kept
+    // `resting` false, so the corridor rendered at 60fps for the whole advert:
+    // 38% of a core for the 5s placeholder, and 900-1800 frames once a real
+    // 15-30s rewarded unit lands, on a phone, during an ad.
+    frozen = true;
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    if (flickTimer) { clearTimeout(flickTimer); flickTimer = null; }
     const ok = await opts.showAd({ id: p.id, reward: p.reward });
+    frozen = false;
     if (ok) {
       policy.rewardedCompleted();
       if (!hats.includes(p.reward)) { hats.push(p.reward); wearing = hats.length - 1; }
@@ -208,7 +263,12 @@ export function mountPod(container: HTMLElement, opts: {
   // ---------------------------------------------------------------- drawing
 
   function drawScene(now: number) {
-    const flick = reduceMotion ? 1 : (now < flickerUntil ? (Math.sin(now * 0.9) > 0.1 ? 1 : 0.55) : 1);
+    // Math.sin(now * 0.9) with now in ms is 143Hz, aliased against a 60fps
+    // sampler, which measured 4 flashes/sec at a 30% luminance drop across the
+    // tubes, their cones and the floor pools. WCAG 2.3.1 caps general flashing
+    // at 3/sec, so that was a seizure risk, not a flicker. This is a continuous
+    // ~1.6Hz modulation with an 18% swing: a tube struggling, not a strobe.
+    const flick = reduceMotion ? 1 : (now < flickerUntil ? 0.82 + 0.18 * Math.sin(now * 0.010) : 1);
     const c0 = Math.round(cam);
     ctx.save();
     ctx.scale(scale, scale);
@@ -246,9 +306,12 @@ export function mountPod(container: HTMLElement, opts: {
     for (const p of PODS) {
       const tx = p.x;                                    // lamp over its own door
       if (tx < cam - 70 || tx > cam + VIEW_W + 70) continue;
+      // Additive light on a light wall needs far less of it, or overlapping
+      // cones cross into a pale X that reads as a scratch on the glass.
+      const k = pal === LIGHT ? 0.45 : 1;
       const g = ctx.createRadialGradient(tx, 18, 6, tx, 18, 128);
-      g.addColorStop(0, `rgba(${pal.glow},${0.20 * flick})`);
-      g.addColorStop(0.45, `rgba(${pal.glow},${0.06 * flick})`);
+      g.addColorStop(0, `rgba(${pal.glow},${0.20 * flick * k})`);
+      g.addColorStop(0.45, `rgba(${pal.glow},${0.06 * flick * k})`);
       g.addColorStop(1, `rgba(${pal.glow},0)`);
       ctx.save();
       ctx.beginPath();
@@ -319,8 +382,11 @@ export function mountPod(container: HTMLElement, opts: {
       ctx.fillStyle = pal.lit;  ctx.fillRect(x - 6, 86, 3, 4); ctx.fillRect(x + 1, 86, 3, 4);
       ctx.fillStyle = pal.dead; ctx.fillRect(x - 6, 94, 3, 4);
     } else if (kind === "cool") {
-      ctx.fillStyle = pal.cool; ctx.fillRect(x - 7, 86, 14, 20);
-      ctx.fillStyle = pal.frame; ctx.fillRect(x - 6, 106, 12, 26);
+      ctx.fillStyle = pal.cool; ctx.fillRect(x - 7, 84, 14, 20);
+      ctx.fillStyle = pal.frame;
+      ctx.fillRect(x - 2, 104, 4, 3);           // neck
+      ctx.fillRect(x - 6, 107, 12, 25);         // cabinet
+      ctx.fillStyle = pal.ink; ctx.fillRect(x + 1, 112, 2, 2);   // spout
     } else {
       ctx.fillStyle = pal.frame; ctx.fillRect(x - 5, 118, 10, 14);
       ctx.fillStyle = pal.plant;
@@ -401,7 +467,7 @@ export function mountPod(container: HTMLElement, opts: {
    * site's own fonts, not world units squeezed through a 2x transform.
    */
   function drawText() {
-    const sx = (wx: number) => (wx - cam) * scale;
+    const sx = (wx: number) => Math.round((wx - Math.round(cam)) * scale);
     ctx.textAlign = "center";
     const edge = VIEW_W * scale;
     const fits = (t: string, cx: number) => { const w = ctx.measureText(t).width / 2; return cx - w >= 2 && cx + w <= edge - 2; };
@@ -426,6 +492,9 @@ export function mountPod(container: HTMLElement, opts: {
   function loop(now: number) {
     if (!alive) { raf = 0; return; }                       // alive FIRST, always
     if (document.hidden || !onScreen) { raf = 0; return; } // and never reschedule
+    // A frame already in flight when the advert started would otherwise
+    // reschedule itself straight past the cancelAnimationFrame in enter().
+    if (frozen) { raf = 0; return; }
     const dt = Math.min(50, now - last); last = now;
 
     if (me.walking && !busy) {
@@ -454,12 +523,20 @@ export function mountPod(container: HTMLElement, opts: {
     // Exponential, not a per-frame fraction: the old form settled 28% faster
     // and framed the figure 8.6 CSS px differently at 20Hz than at 144Hz,
     // which is backwards -- the worse device got the tighter camera.
-    cam += (want - cam) * (1 - Math.exp(-dt / 70));
+    cam += (want - cam) * (reduceMotion ? 1 : (1 - Math.exp(-dt / 70)));
     if (Math.abs(want - cam) < 0.2) cam = want;
 
     if (now > flickerAt && now > flickerUntil) {
-      flickerUntil = reduceMotion ? 0 : now + 90 + Math.random() * 120;
-      flickerAt = now + 2200 + Math.random() * 3500;
+      flickerUntil = reduceMotion ? 0 : now + 240 + Math.random() * 200;
+      // Rare and short. A 900ms burst every ~4s was a 19% duty cycle on an
+      // idle screen, which is a lot of battery for a cosmetic stutter.
+      flickerAt = now + 7000 + Math.random() * 7000;
+      // Arm it. The scheduler only advanced inside the loop, and the loop
+      // parks when nothing is moving, so the next flicker time never arrived:
+      // sampling the tube row for 25 seconds found exactly one luminance
+      // value. The headline visual was unreachable in normal use.
+      if (flickTimer) clearTimeout(flickTimer);
+      if (!reduceMotion) flickTimer = setTimeout(() => wake(520), Math.max(0, flickerAt - now));
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -467,7 +544,7 @@ export function mountPod(container: HTMLElement, opts: {
     drawText();
 
     const resting = !me.walking && !busy && Math.abs(want - cam) < 0.2 && now > flickerUntil;
-    if (resting && now > wakeUntil) { raf = 0; return; }   // idle costs zero frames
+    if (resting && now > wakeUntil) { raf = 0; fx.hum(false); return; }  // idle costs zero frames, and no audio path
     raf = requestAnimationFrame(loop);
   }
 
@@ -493,6 +570,8 @@ export function mountPod(container: HTMLElement, opts: {
       alive = false;
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
+      if (flickTimer) clearTimeout(flickTimer);
+      flickTimer = null;
       ro.disconnect(); io.disconnect();
       mq.removeEventListener("change", onTheme);
       rm.removeEventListener("change", onRM);
