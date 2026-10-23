@@ -60,13 +60,34 @@ async function startRun(req: Request, env: Env) {
   return json({ runId: row.id, seed, course: mine.length + 1 });
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function finishRun(req: Request, env: Env) {
   const user = await requireUser(req, env);
   const { runId, replay } = (await req.json()) as { runId: string; replay: Replay };
+  // Never concatenate unvalidated input into a query: a trailing "#" would turn
+  // the rest of the query string into a URL fragment and drop the ownership filter.
+  if (!UUID.test(String(runId))) return json({ ok: false, reason: "bad run id" }, 400);
   const [run] = await sb(env, `runs?id=eq.${runId}&user_id=eq.${user.id}&select=*`);
   if (!run) return json({ ok: false, reason: "no such run" }, 404);
-  if (run.score !== null) return json({ ok: false, reason: "already finished" }, 409);
-  if (Date.now() - Date.parse(run.started_at) > RUN_TTL_MS) return json({ ok: false, reason: "run expired" }, 410);
+  // Idempotent: a retry after a submit we already accepted returns the score
+  // rather than reading as another failure.
+  if (run.score !== null) return json({ ok: true, score: run.score, already: true });
+  // One attempt per run. Without this you could keep re-submitting against the
+  // same seed until something verified, which is the whole economics of
+  // solving a course offline.
+  if (run.rejected_reason) return json({ ok: false, reason: "run already submitted" }, 409);
+  const elapsedMs = Date.now() - Date.parse(run.started_at);
+  if (elapsedMs > RUN_TTL_MS) return json({ ok: false, reason: "run expired" }, 410);
+  // A replay has to have taken about as long to play as it claims to last.
+  // Without this you can start a run, solve the course offline, and post a
+  // three-minute replay ten seconds later.
+  const claimedMs = (replay.endTick / 60) * 1000;
+  if (elapsedMs < claimedMs * 0.8) return json({ ok: false, reason: "submitted faster than it could be played" }, 400);
+  // The week is decided by when the run FINISHED. Stamping it at the start let
+  // you hold runs open across the boundary, read the final board, and then post
+  // exactly the score you needed into a week that had already closed.
+  if (run.week !== weekKey()) return json({ ok: false, reason: "run crossed the week boundary" }, 409);
   if (replay.seed !== Number(run.seed) || replay.game !== run.game) return json({ ok: false, reason: "replay does not match run" }, 400);
   const result = verify(replay);
   if (!result.ok) {
@@ -89,10 +110,14 @@ const ENTRIES = (LEDGER as unknown as { entries: Entry[] }).entries;
 
 /** How many cents of an entry land in ONE game's pot. */
 function potShare(e: Entry, game: string): number {
-  const mine = e.game === game ? e.cents : e.game === "all" ? Math.floor(e.cents / 3) : 0;
-  if (e.kind === "ads" || e.kind === "merch") return Math.floor(mine / 2);
-  if (e.kind === "seed" || e.kind === "rollover") return mine;
-  if (e.kind === "payout") return -mine;
+  // Split the half first, then share it, so small amounts don't round away to
+  // nothing. Flooring twice turned 100c of ad money into 48c of pot, and
+  // anything under 6c into zero, while the rules promise half.
+  const half = e.kind === "ads" || e.kind === "merch" ? e.cents / 2 : e.cents;
+  const mine = e.game === game ? half : e.game === "all" ? half / 3 : 0;
+  if (e.kind === "ads" || e.kind === "merch") return Math.round(mine);
+  if (e.kind === "seed" || e.kind === "rollover") return Math.round(mine);
+  if (e.kind === "payout") return -Math.round(mine);
   return 0;
 }
 
@@ -105,7 +130,9 @@ function pots() {
     for (const e of ENTRIES) {
       if (weekKey(new Date(e.date + "T12:00:00Z")) !== week) continue;
       const share = potShare(e, g);
-      if (e.kind === "ads") ads += share; else if (e.kind === "merch") merch += share; else if (e.kind === "rollover") rollover += share;
+      if (e.kind === "ads") ads += share;
+      else if (e.kind === "merch") merch += share;
+      else if (e.kind === "rollover" || e.kind === "seed" || e.kind === "payout") rollover += share;
     }
     out[g] = { seed_cents: seed, ads_cents: ads, merch_cents: merch, rollover_cents: rollover, est_pot_cents: seed + ads + merch + rollover, confirmed: false };
   }

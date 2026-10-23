@@ -2,7 +2,7 @@ import type { Replay, Sim } from "../sim/types";
 import { Runner } from "./runner";
 
 /** What the renderer is told about the run, beyond the sim state. */
-export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean }
+export interface Hud { best: number; started: boolean; seed: number; target: number; leader: string; ranked: boolean; waiting: boolean }
 
 export interface GameDef<S> {
   sim: Sim<S>;
@@ -20,6 +20,10 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   onRun: (replay: Replay, claimedScore: number) => void;
   /** The score to beat this week, and who holds it. Read fresh every frame. */
   target?: () => { score: number; handle: string; ranked: boolean };
+  /** False while a ranked course is still being fetched. Taps are ignored
+   *  until it is true, so a ranked run can never start without a server seed
+   *  and silently turn out not to count. */
+  ready?: () => boolean;
 }): () => void {
   const canvas = document.createElement("canvas");
   canvas.style.display = "block";
@@ -50,10 +54,13 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
 
   function onTap(e: Event) {
     e.preventDefault();
+    if (opts.ready && !opts.ready()) return; // still fetching a ranked course
     if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; return; }
     runner.tap();
   }
-  function onKey(e: KeyboardEvent) { if (e.code === "Space" || e.code === "ArrowUp") onTap(e); }
+  // e.repeat guard: OS key-repeat fires ~30Hz, which would otherwise record a
+  // tap pattern no human produces and get the run thrown out.
+  function onKey(e: KeyboardEvent) { if (!e.repeat && (e.code === "Space" || e.code === "ArrowUp")) onTap(e); }
   canvas.addEventListener("pointerdown", onTap);
   window.addEventListener("keydown", onKey);
 
@@ -66,7 +73,8 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
       opts.onRun(runner.replay(), runner.score);
     }
     const t = opts.target?.() ?? { score: 0, handle: "", ranked: false };
-    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked });
+    const waiting = !(opts.ready?.() ?? true);
+    def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

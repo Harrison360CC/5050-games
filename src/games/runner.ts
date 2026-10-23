@@ -10,7 +10,7 @@ export class Runner<S> {
   state: S;
   readonly seed: number;
   private taps: number[] = [];
-  private pendingTap = false;
+  private pendingTaps = 0;
   private acc = 0;
   private readonly dt: number;
   private last = 0;
@@ -28,7 +28,9 @@ export class Runner<S> {
     // Swallow taps that land too close together instead of recording them. The
     // player loses nothing: the run stays valid and only the extra tap is lost.
     if (this.taps.length && this.tick + 1 - this.taps[this.taps.length - 1]! < MIN_TAP_GAP) return;
-    this.pendingTap = true;
+    // Queue, never a single flag: two taps inside one rendered frame used to
+    // collapse into one, which on a 30fps phone is any two taps within 33ms.
+    this.pendingTaps = Math.min(4, this.pendingTaps + 1);
   }
 
   frame(now: number): number {
@@ -38,8 +40,8 @@ export class Runner<S> {
     this.last = now;
     let n = 0;
     while (this.acc >= this.dt && !this.dead) {
-      const tap = this.pendingTap;
-      this.pendingTap = false;
+      const tap = this.pendingTaps > 0;
+      if (tap) this.pendingTaps--;
       this.sim.step(this.state, tap);
       this.tick++;
       if (tap) this.taps.push(this.tick);

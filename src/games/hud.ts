@@ -13,6 +13,13 @@ export function drawChase(
   ink: string,
   accent: string,
 ) {
+  if (hud.waiting) {
+    ctx.textAlign = "center";
+    ctx.fillStyle = accent;
+    ctx.font = "bold 15px system-ui, sans-serif";
+    ctx.fillText("getting your course…", worldW / 2, 126);
+    return;
+  }
   if (!hud.ranked || hud.target <= 0) return;
   ctx.textAlign = "center";
   if (score > hud.target) {

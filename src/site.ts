@@ -92,16 +92,43 @@ function takeSeed(): number {
   return e.seed;
 }
 
+/** Unsent ranked runs, kept on disk until the server confirms them. A dropped
+ *  connection used to lose the run outright: it existed only in memory. */
+const OUTBOX = "5050.outbox";
+type Pending = { runId: string; replay: Replay };
+const outbox = (): Pending[] => { try { return JSON.parse(localStorage.getItem(OUTBOX) || "[]"); } catch { return []; } };
+const setOutbox = (v: Pending[]) => { try { localStorage.setItem(OUTBOX, JSON.stringify(v.slice(-20))); } catch {} };
+
+async function submitRun(p: Pending): Promise<boolean> {
+  try {
+    const res = await api<{ ok: boolean; score?: number; reason?: string }>("/run/finish", p);
+    if (res.ok) { say(`ranked: ${res.score} verified.`); await loadLive(); }
+    else say(`ranked run rejected: ${res.reason}`);
+    return true; // the server answered, so stop holding on to it either way
+  } catch (e) {
+    const m = (e as Error).message || "";
+    // A refusal is an answer; only a transport failure is worth retrying.
+    if (/rejected|already|expired|boundary|bad run id|faster/i.test(m)) { say(`ranked run rejected: ${m}`); return true; }
+    say("couldn't reach the server. holding your run and retrying.", 6000);
+    return false;
+  }
+}
+async function flushOutbox() {
+  const q = outbox();
+  if (!q.length) return;
+  const left: Pending[] = [];
+  for (const p of q) if (!(await submitRun(p))) left.push(p);
+  setOutbox(left);
+}
+
 async function onRun(replay: Replay, claimed: number) {
   const r = verify(replay);
   if (r.ok && r.score === claimed && claimed > best[current]) best[current] = claimed;
   if (activeRun && replay.seed === activeRun.seed) {
     const run = activeRun; activeRun = null;
-    try {
-      const res = await api<{ ok: boolean; score?: number; reason?: string }>("/run/finish", { runId: run.runId, replay });
-      if (res.ok) { say(`ranked: ${res.score} verified.`); await loadLive(); }
-      else say(`ranked run rejected: ${res.reason}`);
-    } catch (e) { say(`couldn't submit: ${(e as Error).message}`); }
+    const p: Pending = { runId: run.runId, replay };
+    setOutbox([...outbox(), p]);
+    if (await submitRun(p)) setOutbox(outbox().filter((x) => x.runId !== p.runId));
   } else if (mode === "ranked") {
     say("that run wasn't ranked (no server seed). next one is.");
   }
@@ -116,6 +143,7 @@ function show(g: GameKey) {
     seed: takeSeed,
     onRun,
     target: () => ({ score: TOP[current][0]?.score ?? 0, handle: TOP[current][0]?.handle ?? "", ranked: mode === "ranked" }),
+    ready: () => mode !== "ranked" || seedCache.length > 0 || activeRun !== null,
   });
   void refillSeed();
   renderChips(); renderPot(); renderTop();
@@ -229,3 +257,5 @@ complain.querySelector(".close")!.addEventListener("click", () => { complain.hid
 $("complain-link").addEventListener("click", (e) => { e.preventDefault(); complain.hidden = false; paintComplaint(); });
 
 show("pigeon");
+void flushOutbox();
+window.addEventListener("online", () => void flushOutbox());

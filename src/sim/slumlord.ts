@@ -87,7 +87,10 @@ export const slumlordSim: Sim<SlumlordState> = {
     // next floor: same width as landed, faster, from a random side
     const n = s.floors.length;
     // no cap: the tower eventually outruns any pair of thumbs, so runs end on skill
-    const speed = 2.2 + n * 0.055;
+    // Capped. Uncapped, the speed-scaled tolerance eventually exceeds the whole
+    // travel range and every tap counts as perfect, which makes the game
+    // unloseable for a script. The 3 minute run cap supplies the ceiling instead.
+    const speed = Math.min(9, 2.2 + n * 0.055);
     const dir: 1 | -1 = s.rng.next() < 0.5 ? 1 : -1;
     s.cur = { x: dir === 1 ? 0 : SL_W - landed.w, w: landed.w, dir, speed, v: s.rng.int(0, VIOLATIONS.length - 1) };
     s.since = 0;

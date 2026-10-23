@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rentSim, RENT_GROUND, type RentState } from "../src/sim/rent";
 import { slumlordSim, type SlumlordState } from "../src/sim/slumlord";
+import { pigeonSim } from "../src/sim/pigeon";
+import { RUN_TICKS } from "../src/sim/limits";
 import { verify } from "../src/sim/verify";
-import type { Replay } from "../src/sim/types";
+import type { Replay, Sim } from "../src/sim/types";
 
 function rentBot(seed: number): { replay: Replay; score: number } {
   const s: RentState = rentSim.init(seed);
@@ -65,4 +67,32 @@ test("rent: player starts on the ground and can't double jump", () => {
   const vy1 = s.vy;
   rentSim.step(s, true);
   assert.ok(s.vy > vy1, "second tap mid-air should not reset vy");
+});
+
+test("slumlord: a flawless run still banks a score when the clock runs out", () => {
+  // A good player who never misses cannot die: at full width the minimum
+  // overlap far exceeds MIN_W. Before the run cap existed, verify() rejected
+  // those runs with "run did not end" and the player lost everything.
+  const s = slumlordSim.init(7);
+  const taps: number[] = [];
+  let last = -99;
+  while (!s.dead) {
+    const top = s.floors[s.floors.length - 1]!;
+    const c = s.cur;
+    const hit = Math.abs(c.x + c.dir * c.speed - top.x) <= c.speed / 2 && s.tick - last >= 3;
+    slumlordSim.step(s, hit);
+    if (hit) { taps.push(s.tick); last = s.tick; }
+  }
+  const r = verify({ game: "slumlord", version: slumlordSim.version, seed: 7, taps, endTick: s.tick });
+  assert.ok(r.ok, `flawless run was rejected: ${r.ok ? "" : r.reason}`);
+  assert.equal(s.tick, RUN_TICKS, "a flawless run should end on the clock, not a death");
+});
+
+test("every game ends inside the run cap", () => {
+  for (const sim of [pigeonSim, rentSim, slumlordSim] as Sim<any>[]) {
+    const st = sim.init(3);
+    let t = 0;
+    while (!sim.isDead(st) && t < RUN_TICKS + 10) { sim.step(st, false); t++; }
+    assert.ok(t <= RUN_TICKS, `${sim.id} ran past the cap`);
+  }
 });
