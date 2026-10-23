@@ -44,6 +44,17 @@ export async function getProfile(): Promise<Profile | null> {
   return (data as Profile) ?? null;
 }
 
+/** Returns null on success, or a human message. */
+export async function setHandle(handle: string): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return "not signed in";
+  if (!/^[A-Za-z0-9_]{3,20}$/.test(handle)) return "letters, numbers, underscores. 3 to 20.";
+  const { error } = await supabase.from("profiles").update({ handle }).eq("id", user.id);
+  if (!error) return null;
+  if (error.code === "23505") return "taken. someone got there first.";
+  return error.message;
+}
+
 export async function setAdult() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;

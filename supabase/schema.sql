@@ -3,7 +3,7 @@
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  handle text unique not null check (handle ~ '^[a-z0-9_]{3,20}$'),
+  handle text not null check (handle ~ '^[A-Za-z0-9_]{3,20}$')  -- unique index on lower(handle), see nicknames.sql,
   is_adult boolean not null default false,       -- self-declared 18+, required to win
   payout_email text,                             -- PayPal / e-transfer address, set at claim time
   banned boolean not null default false,

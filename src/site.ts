@@ -3,7 +3,7 @@ import { GAMES } from "./games/registry";
 import { mountPod } from "./pod/pod";
 import { verify } from "./sim/verify";
 import type { Replay } from "./sim/types";
-import { api, getProfile, onSession, setAdult, signInWith, signInWithEmail, signOut, type Profile } from "./auth/client";
+import { api, getProfile, onSession, setAdult, setHandle, signInWith, signInWithEmail, signOut, type Profile } from "./auth/client";
 
 type GameKey = keyof typeof GAMES;
 type Section = "games" | "pod" | "shop";
@@ -157,12 +157,26 @@ sheet.querySelector("#adult-ok")!.addEventListener("click", async () => {
   sheet.hidden = true; showLoginStep(); setMode("ranked");
 });
 sheet.querySelector(".close")!.addEventListener("click", () => { sheet.hidden = true; showLoginStep(); });
-signinLink.addEventListener("click", async (e) => {
+const account = $<HTMLFormElement>("account");
+const nick = account.querySelector("#nick") as HTMLInputElement;
+signinLink.addEventListener("click", (e) => {
   e.preventDefault();
   if (!profile) { sheet.hidden = false; return; }
-  if (confirmOut()) { await signOut(); profile = null; signinLink.textContent = "sign in"; setMode("practice"); }
+  nick.value = profile.handle; account.hidden = false; nick.focus();
 });
-const confirmOut = () => { const t = signinLink.dataset.armed; if (t) { delete signinLink.dataset.armed; return true; } signinLink.dataset.armed = "1"; say("tap your name again to sign out.", 2500); setTimeout(() => delete signinLink.dataset.armed, 2500); return false; };
+account.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const want = nick.value.trim();
+  if (want === profile?.handle) { account.hidden = true; return; }
+  const err = await setHandle(want);
+  if (err) { say(err); return; }
+  profile = await getProfile(); signinLink.textContent = profile?.handle ?? "sign in";
+  account.hidden = true; say(`you are now ${want}.`); void loadLive();
+});
+account.querySelector("#signout")!.addEventListener("click", async () => {
+  await signOut(); profile = null; signinLink.textContent = "sign in"; account.hidden = true; setMode("practice");
+});
+account.querySelector(".close")!.addEventListener("click", () => { account.hidden = true; });
 
 // ---- nav ----
 document.querySelector(".tabs")!.addEventListener("click", (e) => { const t = (e.target as HTMLElement).closest<HTMLButtonElement>(".tab"); if (t) show(t.dataset.g as GameKey); });

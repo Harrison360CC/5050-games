@@ -194,6 +194,17 @@
     </div>
   </form>
 
+  <form id="account" class="sheet" hidden>
+    <div class="sheet-in">
+      <button type="button" class="close" aria-label="close">×</button>
+      <h3>Your nickname.</h3>
+      <p>Picked at random so nobody's real name ends up on a leaderboard. Change it if you want. Letters, numbers, underscores, 3 to 20. One per customer.</p>
+      <input id="nick" type="text" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button type="submit" class="go">Save</button>
+      <button type="button" class="oauth" id="signout">Sign out</button>
+    </div>
+  </form>
+
   <form id="complain" class="sheet" hidden>
     <div class="sheet-in">
       <button type="button" class="close" aria-label="close">×</button>
