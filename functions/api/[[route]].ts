@@ -9,7 +9,7 @@
  *   GET  /api/pots                            -> { week, pots: { game: {...} } }
  *   POST /api/complain     { who, email, body } -> { ok }   (stored; no auto-email)
  */
-import { verify } from "../../src/sim/verify";
+import { verify, SIMS } from "../../src/sim/verify";
 import SEED from "../../seed.json";
 import LEDGER from "../../ledger.json";
 import type { Replay } from "../../src/sim/types";
@@ -56,11 +56,32 @@ async function startRun(req: Request, env: Env) {
   const week = weekKey();
   const mine = await sb(env, `runs?user_id=eq.${user.id}&game=eq.${game}&week=eq.${week}&select=id`);
   const seed = courseSeed(week, game, mine.length);
-  const [row] = await sb(env, "runs", { method: "POST", body: { user_id: user.id, game, seed, week } });
+  const [row] = await sb(env, "runs", {
+    method: "POST",
+    body: { user_id: user.id, game, seed, week, sim_version: SIMS[game]?.version ?? null, ...provenance(req) },
+  });
   return json({ runId: row.id, seed, course: mine.length + 1 });
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Who sent this, roughly. Enough to show two "players" were one person without
+ * storing a raw IP. The privacy page already tells players we keep this.
+ */
+function provenance(req: Request): Record<string, unknown> {
+  const cf = (req as unknown as { cf?: Record<string, unknown> }).cf ?? {};
+  return {
+    ip_hash: hash32(`${req.headers.get("cf-connecting-ip") ?? ""}|5050`),
+    country: (cf.country as string) ?? null,
+    user_agent: (req.headers.get("user-agent") ?? "").slice(0, 300),
+  };
+}
+function hash32(v: string): string {
+  let h = 0x811c9dc5;
+  for (const c of v) { h ^= c.charCodeAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return (h >>> 0).toString(16);
+}
 
 async function finishRun(req: Request, env: Env) {
   const user = await requireUser(req, env);
@@ -94,7 +115,21 @@ async function finishRun(req: Request, env: Env) {
     await sb(env, `runs?id=eq.${runId}`, { method: "PATCH", body: { rejected_reason: result.reason, replay } });
     return json({ ok: false, reason: result.reason }, 400);
   }
-  await sb(env, `runs?id=eq.${runId}`, { method: "PATCH", body: { score: result.score, ticks: result.ticks, replay, finished_at: new Date().toISOString() } });
+  // Timing fingerprint: a human's taps scatter, a script's do not. Stored, not
+  // acted on automatically. Payouts get a human look either way.
+  const gaps = (replay.tapMs ?? []).slice(1).map((m, i) => m - (replay.tapMs ?? [])[i]!);
+  const mean = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0;
+  const sd = gaps.length > 1 ? Math.sqrt(gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / (gaps.length - 1)) : 0;
+  await sb(env, `runs?id=eq.${runId}`, {
+    method: "PATCH",
+    body: {
+      score: result.score, ticks: result.ticks, replay,
+      finished_at: new Date().toISOString(),
+      wall_ms: elapsedMs,
+      tap_sd_ms: Math.round(sd * 10) / 10,
+      ...provenance(req),
+    },
+  });
   return json({ ok: true, score: result.score });
 }
 

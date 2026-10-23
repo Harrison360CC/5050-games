@@ -12,6 +12,13 @@ export interface Replay {
   taps: number[];
   /** Tick on which the run ended (death). */
   endTick: number;
+  /**
+   * Wall-clock milliseconds since the run started, one per tap. Not used to
+   * compute the score and not trusted for anything, but it is the only signal
+   * that separates a human from a script, and it cannot be reconstructed
+   * later. Optional so an older replay still verifies.
+   */
+  tapMs?: number[];
 }
 
 export type GameId = "pigeon" | "rent" | "slumlord";

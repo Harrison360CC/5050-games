@@ -41,6 +41,14 @@ export function verify(replay: Replay): VerifyResult {
     prev = t;
   }
 
+  // Telemetry is never an input to the score. Only check it is not nonsense,
+  // so a malformed field cannot be used to smuggle anything through.
+  if (replay.tapMs !== undefined) {
+    if (!Array.isArray(replay.tapMs) || replay.tapMs.length !== replay.taps.length)
+      return { ok: false, reason: "tap timing does not match taps" };
+    for (const m of replay.tapMs) if (!Number.isFinite(m) || m < 0 || m > 30 * 60_000) return { ok: false, reason: "bad tap timing" };
+  }
+
   const state = sim.init(replay.seed);
   const taps = new Set(replay.taps);
   for (let tick = 1; tick <= replay.endTick; tick++) {

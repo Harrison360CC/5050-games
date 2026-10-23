@@ -10,6 +10,9 @@ export class Runner<S> {
   state: S;
   readonly seed: number;
   private taps: number[] = [];
+  private tapMs: number[] = [];
+  private t0 = 0;
+  private queuedMs: number[] = [];
   private pendingTaps = 0;
   private acc = 0;
   private readonly dt: number;
@@ -31,6 +34,8 @@ export class Runner<S> {
     // Queue, never a single flag: two taps inside one rendered frame used to
     // collapse into one, which on a 30fps phone is any two taps within 33ms.
     this.pendingTaps = Math.min(4, this.pendingTaps + 1);
+    if (!this.t0) this.t0 = now();
+    this.queuedMs.push(Math.round(now() - this.t0));
   }
 
   frame(now: number): number {
@@ -44,7 +49,7 @@ export class Runner<S> {
       if (tap) this.pendingTaps--;
       this.sim.step(this.state, tap);
       this.tick++;
-      if (tap) this.taps.push(this.tick);
+      if (tap) { this.taps.push(this.tick); this.tapMs.push(this.queuedMs.shift() ?? 0); }
       this.acc -= this.dt;
       n++;
     }
@@ -55,6 +60,8 @@ export class Runner<S> {
   get score() { return this.sim.score(this.state); }
 
   replay(): Replay {
-    return { game: this.sim.id, version: this.sim.version, seed: this.seed, taps: [...this.taps], endTick: this.tick };
+    return { game: this.sim.id, version: this.sim.version, seed: this.seed, taps: [...this.taps], endTick: this.tick, tapMs: [...this.tapMs] };
   }
 }
+
+function now() { try { return performance.now(); } catch { return Date.now(); } }
