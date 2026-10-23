@@ -1,3 +1,7 @@
 node_modules
 dist
 .wrangler
+
+# throwaway probe scripts written by review agents (Playwright only resolves
+# from inside the repo, so they land here rather than in /tmp)
+.probe-*.mjs
