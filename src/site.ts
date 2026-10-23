@@ -20,7 +20,7 @@ let current: GameKey = "pigeon";
 let mode: "practice" | "ranked" = "practice";
 let profile: Profile | null = null;
 let unmount: (() => void) | null = null;
-let podUnmount: (() => void) | null = null;
+let pod: ReturnType<typeof mountPod> | null = null;
 let activeRun: { runId: string; seed: number } | null = null;
 const best: Record<GameKey, number> = { pigeon: 0, rent: 0, slumlord: 0 };
 
@@ -303,6 +303,29 @@ account.querySelector("#signout")!.addEventListener("click", async () => {
 });
 account.querySelector(".close")!.addEventListener("click", () => { account.hidden = true; });
 
+/**
+ * Sound and haptics toggles. Haptics are disabled outright on any device with
+ * no navigator.vibrate, which is every iPhone: there is no web haptics API on
+ * iOS, so offering a switch that cannot do anything would be a lie.
+ */
+function paintFx() {
+  if (!pod) return;
+  const sb = $("fx-sound"), hb = $("fx-haptics");
+  sb.setAttribute("aria-pressed", String(pod.fx.prefs.sound));
+  sb.textContent = `SOUND: ${pod.fx.prefs.sound ? "ON" : "OFF"}`;
+  if (!pod.hasHaptics) {
+    (hb as HTMLButtonElement).disabled = true;
+    hb.setAttribute("aria-pressed", "false");
+    hb.textContent = "HAPTICS: N/A";
+    hb.title = "This browser has no vibration API. Safari on iOS never has.";
+    return;
+  }
+  hb.setAttribute("aria-pressed", String(pod.fx.prefs.haptics));
+  hb.textContent = `HAPTICS: ${pod.fx.prefs.haptics ? "ON" : "OFF"}`;
+}
+$("fx-sound").addEventListener("click", () => { if (!pod) return; pod.fx.unlock(); pod.fx.setSound(!pod.fx.prefs.sound); if (pod.fx.prefs.sound) { pod.fx.hum(true); pod.fx.tick(); } paintFx(); });
+$("fx-haptics").addEventListener("click", () => { if (!pod) return; pod.fx.setHaptics(!pod.fx.prefs.haptics); if (pod.fx.prefs.haptics) pod.fx.buzz(14); paintFx(); });
+
 // ---- nav ----
 document.querySelector(".tabs")!.addEventListener("click", (e) => { const t = (e.target as HTMLElement).closest<HTMLButtonElement>(".tab"); if (t) show(t.dataset.g as GameKey); });
 modeEl.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button"); if (b) setMode(b.dataset.m as typeof mode); });
@@ -312,16 +335,22 @@ document.querySelector(".nav")!.addEventListener("click", (e) => {
   const s = b.dataset.s as Section;
   for (const x of document.querySelectorAll<HTMLButtonElement>(".nav-b")) x.setAttribute("aria-selected", String(x === b));
   for (const sec of ["games", "pod", "shop"] as Section[]) $("s-" + sec).hidden = sec !== s;
-  if (s === "pod" && !podUnmount) {
+  if (s === "pod" && !pod) {
     podScreen.innerHTML = "";
-    podUnmount = mountPod(podScreen, {
+    const line = $("pod-say");
+    pod = mountPod(podScreen, {
+      say: (m) => { line.textContent = m; },
       showAd: () => new Promise((res) => {
         const o = document.createElement("div"); o.className = "fakead"; let n = 5;
         o.textContent = `AD PLAYING. ${n}`; podScreen.appendChild(o);
         const t = setInterval(() => { n--; o.textContent = n > 0 ? `AD PLAYING. ${n}` : "AD OVER."; if (n <= 0) { clearInterval(t); setTimeout(() => { o.remove(); res(true); }, 500); } }, 1000);
       }),
     });
+    paintFx();
   }
+  // The pod runs a render loop and an AudioContext. Leaving it mounted behind a
+  // hidden section is how the old build leaked a permanent rAF chain per visit.
+  if (s !== "pod" && pod) { pod.destroy(); pod = null; }
 });
 
 // ---- complaints ----

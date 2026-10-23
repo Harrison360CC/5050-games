@@ -100,7 +100,15 @@
      is a label, not the headline number, so it reads as muted ink. */
   .chip-pot { display: block; font-weight: 500; font-size: 11px; color: var(--muted); }
   .tab[aria-selected="true"] .chip-pot { color: inherit; opacity: .75; }
-  #podscreen { position: relative; min-height: 360px; }
+  #podscreen { position: relative; min-height: 300px; }
+  #podscreen canvas { border: 1px solid var(--rule); }
+  /* The message line lives in the DOM, in the site's real fonts. Drawing it
+     into the canvas is what made the old pod render prose at about 5.7px. */
+  .podsay { font-family: var(--mono); font-size: 13px; line-height: 1.45; color: var(--ink); margin: 10px 0 0; min-height: 38px; }
+  .fxrow { display: flex; gap: 8px; margin-top: 10px; }
+  .fxb { flex: 1; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 12px 6px; min-height: 44px; background: transparent; color: var(--muted); border: 1px solid var(--rule); cursor: pointer; }
+  .fxb[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }
+  .fxb[disabled] { opacity: .5; cursor: default; }
   #podscreen canvas { margin: auto; }
   .fakead { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); color: #ECEAE4; font-family: var(--mono); font-size: 18px; }
   /* Above body.playing .stage (40) and .exit (41): a sheet opened from the
@@ -270,8 +278,13 @@
 
   <section id="s-pod" hidden>
     <div class="panel">
-      <p class="hint">No pot in here, just pods. Tap to walk. Walk into a pod, watch an ad, get a hat. The hat does nothing. Three a day, then they close for the night.</p>
-      <div id="podscreen" class="screen-ph"></div>
+      <p class="hint">No pot in here, just pods. Tap a pod to walk to it. Watch an advert, get a hat. The hat does nothing. Three a day, then they close for the night.</p>
+      <div id="podscreen"></div>
+      <p id="pod-say" class="podsay" aria-live="polite">WELCOME TO THE LOYALTY CENTER, VALUED ASSET.</p>
+      <div class="fxrow">
+        <button id="fx-sound" class="fxb" aria-pressed="true">SOUND: ON</button>
+        <button id="fx-haptics" class="fxb" aria-pressed="true">HAPTICS: ON</button>
+      </div>
     </div>
   </section>
 
