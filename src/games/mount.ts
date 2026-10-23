@@ -30,7 +30,13 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
 }): () => void {
   const canvas = document.createElement("canvas");
   canvas.style.display = "block";
-  canvas.style.touchAction = "none";
+  // `pan-y` until a run is actually live, so a vertical swipe on the menu
+  // scrolls the page instead of being eaten. With `none` here from the start,
+  // the canvas covered the whole viewport below the nav and the first thing a
+  // curious visitor does -- a short exploratory swipe -- launched a fullscreen
+  // run instead of showing them what the site is. Once the run is live we want
+  // `none`, because then every pixel is the game and a scroll is a misfire.
+  container.style.touchAction = "pan-y";
   canvas.setAttribute("role", "application");
   canvas.setAttribute("aria-label", `${def.sim.id}: tap or press space to play`);
   canvas.tabIndex = 0;
@@ -64,18 +70,70 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   function onTap(e: Event) {
     e.preventDefault();
     if (opts.ready && !opts.ready()) return; // still fetching a ranked course
-    if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; note = ""; firstRun = false; return; }
+    if (runner.dead) { runner = new Runner(def.sim, opts.seed()); submitted = false; note = ""; firstRun = false;
+      return; }
     runner.tap();
   }
   // e.repeat guard: OS key-repeat fires ~30Hz, which would otherwise record a
   // tap pattern no human produces and get the run thrown out.
-  function onKey(e: KeyboardEvent) { if (!e.repeat && (e.code === "Space" || e.code === "ArrowUp")) onTap(e); }
-  canvas.addEventListener("pointerdown", onTap);
+  function onKey(e: KeyboardEvent) {
+    if (e.repeat || (e.code !== "Space" && e.code !== "ArrowUp")) return;
+    // Typing into the complaints box -- the only support channel here -- used
+    // to swallow every space AND start a run behind the open modal.
+    const t = e.target as HTMLElement | null;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    if (document.querySelector(".sheet:not([hidden])")) return;
+    onTap(e);
+  }
+
+  /**
+   * While a run is live, a press acts on `pointerdown`: that is the lowest
+   * latency the browser offers and the game is twitchy enough to feel the
+   * difference. Everywhere else -- the idle menu, the death screen -- we wait
+   * for `pointerup` and require the finger to have stayed put, so a drag
+   * scrolls or does nothing rather than starting or restarting a run.
+   *
+   * This does not weaken verification. Taps are recorded as tick indices from
+   * the start of the run, so the discrimination happens strictly before the
+   * sim exists, and it makes the recorded input more human-shaped, not less.
+   */
+  const TAP_SLOP = 10;   // px of travel still counted as a tap
+  const TAP_TIME = 500;  // ms before a press stops counting as a tap
+  let down: { x: number; y: number; t: number } | null = null;
+  function live() { return runner.started && !runner.dead; }
+  function onDown(e: PointerEvent) {
+    if (live()) { onTap(e); down = null; return; }
+    down = { x: e.clientX, y: e.clientY, t: e.timeStamp };
+  }
+  function onUp(e: PointerEvent) {
+    const d = down; down = null;
+    if (!d) return;
+    if (Math.abs(e.clientX - d.x) > TAP_SLOP || Math.abs(e.clientY - d.y) > TAP_SLOP) return;
+    if (e.timeStamp - d.t > TAP_TIME) return;
+    onTap(e);
+  }
+  // Bound to the container, not the canvas. `aspect-ratio` letterboxes the
+  // canvas inside the stage, so on a 393x852 phone 18% of the screen was the
+  // same colour as the sky and swallowed taps -- including the bottom band
+  // where a thumb naturally rests. `.exit` and `.mode` are siblings of the
+  // container, not children, so nothing bubbles in from them.
+  container.addEventListener("pointerdown", onDown);
+  container.addEventListener("pointerup", onUp);
+  container.addEventListener("pointercancel", () => { down = null; });
   window.addEventListener("keydown", onKey);
 
   function loop(now: number) {
     if (!alive) return;
-    if (runner.started && !announced) { announced = true; opts.onStart?.(); }
+    // Rising edge of "a run is live", not a once-per-mount latch. Latched, it
+    // meant that after the exit button or any sheet dropped `body.playing`,
+    // nothing could put it back and every later run played in a canvas
+    // clipped by ~70px. Resetting when the run ends also means a deliberate
+    // exit mid-run is respected: you only go full-bleed again on a new run.
+    const liveNow = runner.started && !runner.dead;
+    if (liveNow && !announced) { announced = true; opts.onStart?.(); }
+    if (!liveNow) announced = false;
+    const want = document.body.classList.contains("playing") ? "none" : "pan-y";
+    if (container.style.touchAction !== want) container.style.touchAction = want;
     // Nothing to draw while the tab is in the background. Saves battery and
     // stops the tick accumulator building up a catch-up burst on return.
     // Death has to be submitted even if the app went to the background on the
@@ -100,6 +158,11 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
       : !t.ranked ? "practice. this one does not count."
       : t.closes ? `${t.rank ? ordinal(t.rank) + " this week · " : ""}pot closes in ${t.closes}` : "";
     container.classList.toggle("live", runner.started && !runner.dead);
+    // The death screen is full-bleed too, and everything the shell wanted to
+    // show at that exact moment -- the share button, the "ranked: 7 verified."
+    // toast -- was hidden under `body.playing`. So the one moment a player
+    // feels like sharing was the one moment they could not.
+    document.body.classList.toggle("dead", runner.dead);
     def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting, note, sub, firstRun });
     requestAnimationFrame(loop);
   }

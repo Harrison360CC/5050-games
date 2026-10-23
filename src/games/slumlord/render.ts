@@ -1,17 +1,28 @@
 import { plural, type Hud } from "../mount";
-import { drawChase } from "../hud";
+import { drawChase, drawDeathCard } from "../hud";
 import { FLOOR_H, SL_H, SL_W, VIOLATIONS, type SlumlordState } from "../../sim/slumlord";
 
-const C = { sky: "#8fa3b8", sky2: "#c9d3dc", ground: "#4a4a4a", brick: "#9a5a3c", brick2: "#7d4730", window: "#f2d16b", frame: "#2a2420", text: "#1a1410", paper: "#f5efe0", ok: "#2e8b57", red: "#c62f2f" };
+const C = { sky: "#8fa3b8", sky2: "#c9d3dc", ground: "#4a4a4a", brick: "#9a5a3c", brick2: "#7d4730", window: "#f2d16b", frame: "#2a2420", text: "#1a1410", paper: "#f5efe0", ok: "#17512f", red: "#c62f2f" };
 
 
+/* One pool per game. Two thirds of these used to be the same four lines
+ * copy-pasted across all three, so three different games felt like one game
+ * with three skins, and the shared ones were borrowed meme cadence rather
+ * than landlord satire. Kept under 26 characters: fillText is centred with
+ * no wrap in a 360px world, so anything longer shears off BOTH edges. */
 const DEATH_LINES = [
   "condemned.",
-  "the inspector has questions.",
+  "the inspector is here.",
   "physics showed up.",
-  "i'm so sorry.",
-  "while they're out partying btw.",
-  "write it down. scrib doon.",
+  "structurally optimistic.",
+  "that one was load-bearing.",
+  "tenants noticed.",
+  "reclassified as rubble.",
+  "the building said no.",
+  "still charging full rent.",
+  "all of the violations.",
+  "collapsed. rent unchanged.",
+  "the drywall gave up.",
 ];
 
 export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, scale: number, hud: Hud) {
@@ -68,7 +79,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
     let y = 140;
     for (let i = 0; i < list.length; i++) {
       const f = list[i]!;
-      ctx.fillStyle = `rgba(26,20,16,${0.18 + 0.055 * i})`;
+      ctx.fillStyle = `rgba(26,20,16,${0.45 + 0.055 * i})`;
       ctx.fillText(`${VIOLATIONS[f.v] ?? ""}`, 14, y);
       y += 15;
     }
@@ -83,7 +94,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
   ctx.fillStyle = C.text; ctx.textAlign = "center";
   ctx.font = "600 40px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillText(String(s.floors.length - 1), SL_W / 2, 80);
   ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`floors · best ${hud.best}`, SL_W / 2, 102);
-  drawChase(ctx, hud, s.floors.length - 1, SL_W, "rgba(26,20,16,0.7)", "#2e8b57");
+  drawChase(ctx, hud, s.floors.length - 1, SL_W, "rgba(26,20,16,0.7)", "#17512f");
 
   if (!hud.started && hud.firstRun) {
     ctx.fillStyle = C.text; ctx.font = "700 18px Silkscreen, 'IBM Plex Mono', monospace"; ctx.fillText("SLUMLORD", SL_W / 2, 200);
@@ -91,15 +102,15 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
     ctx.fillStyle = C.ok; ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillText("land it dead centre and you win width back.", SL_W / 2, 250);
   }
   if (s.dead) {
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; { const _l = DEATH_LINES[hud.seed % DEATH_LINES.length]!; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
-      const _w = Math.min(SL_W - 16, Math.max(260, ctx.measureText(_l).width + 36));
-      ctx.fillRect((SL_W - _w) / 2, 200, _w, 140); }
-    ctx.fillStyle = C.paper; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
-    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, SL_W / 2, 245);
+    const body = `${plural(s.floors.length - 1, "floor", "floors")}. tap to go again.`;
+    const ys = drawDeathCard(ctx, SL_W, 200, DEATH_LINES[hud.seed % DEATH_LINES.length]!, [body, hud.note, hud.sub]);
+    let i = 0;
+    ctx.fillStyle = C.paper; ctx.font = "700 16px Silkscreen, 'IBM Plex Mono', monospace";
+    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, SL_W / 2, ys[i++]!);
     ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
-    ctx.fillText(`${plural(s.floors.length - 1, "floor", "floors")}. tap to go again.`, SL_W / 2, 280);
-    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, SL_W / 2, 310); }
-    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, SL_W / 2, 332); }
+    ctx.fillText(body, SL_W / 2, ys[i++]!);
+    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, SL_W / 2, ys[i++]!); }
+    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, SL_W / 2, ys[i++]!); }
   }
   ctx.restore();
 }

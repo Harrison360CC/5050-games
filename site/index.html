@@ -6,7 +6,8 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9545759448534604" crossorigin="anonymous"></script>
 <title>5050 Games</title>
 <meta name="description" content="Three stupid games. Highest score when the week ends takes half the ad money. No purchase, no catch, barely any money.">
-<meta name="theme-color" content="#161615">
+<meta name="theme-color" content="#161615" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EDEBE6" media="(prefers-color-scheme: light)">
 <meta name="color-scheme" content="dark light">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -57,9 +58,10 @@
   /* One slim bar: mark, the pot for the game you are on, and who you are. */
   .top { display: flex; align-items: center; gap: 10px; padding-block: 8px 2px; min-height: 40px; }
   .wm { font-family: var(--pixel); font-size: 15px; color: var(--ink); text-decoration: none; flex: 0 0 auto; }
-  .wm b { color: var(--accent); }
+  .wm b { color: var(--accent-ink); }  /* 2.56:1 as --accent in light mode */
   .potbar { flex: 1 1 auto; display: flex; align-items: baseline; gap: 6px; justify-content: center; min-width: 0; }
   .potbar .n { font-family: var(--mono); font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; color: var(--accent-ink); }
+  .potbar .n[data-state="pending"] { color: var(--muted); }
   .potbar .l { font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
   /* Nothing on this page is boxed except money. */
   .who { flex: 0 0 auto; font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--muted); text-decoration: underline; text-underline-offset: 3px;
@@ -76,7 +78,10 @@
   .panel { display: flex; flex-direction: column; gap: 12px; }
   .screen-ph { background: #0f1116; border: 1px solid var(--rule); min-height: 300px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
   .product { display: block; background: var(--surface); border: 1px solid var(--rule); text-decoration: none; color: inherit; }
-  .product img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--surface); border-bottom: 1px solid var(--rule); }
+  #s-shop .pot { border: 1px solid var(--rule); background: var(--surface); padding: 14px; }
+  #s-shop .pot .n { font-family: var(--mono); font-size: 34px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent-ink); }
+  #s-shop .pot .l { font-family: var(--mono); font-size: 12px; line-height: 1.4; color: var(--muted); margin-top: 6px; max-width: 34ch; }
+  .product img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--surface); border-bottom: 1px solid var(--rule); height: auto; }
   .product .pd { padding: 14px 14px 16px; }
   .product .pn { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
   .product .pn b { font-size: 20px; }
@@ -85,39 +90,53 @@
   .product .buy { display: block; text-align: center; padding: 14px; min-height: 48px; background: var(--accent); color: var(--on-accent); font-weight: 700; font-size: 15px; }
   .hint { font-size: 13px; color: var(--muted); margin: 0; }
   .potline { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
-  .potline a { color: var(--muted); }
+  .potline a { color: var(--muted); display: inline-block; padding: 10px 6px; }
   .board li.you .rank { color: var(--accent-ink); }
   .potline b { color: var(--ink); font-weight: 700; }
   .share { font-family: var(--mono); font-size: 13px; font-weight: 600; padding: 11px; min-height: 44px; width: 100%;
            background: var(--accent); color: var(--on-accent); border: 0; cursor: pointer; }
   .share[hidden] { display: none; }
-  .chip-pot { display: block; font-weight: 500; opacity: .7; font-size: 11px; }
+  /* opacity .7 on accent measured 3.19:1 light / 3.82:1 dark. The per-game pot
+     is a label, not the headline number, so it reads as muted ink. */
+  .chip-pot { display: block; font-weight: 500; font-size: 11px; color: var(--muted); }
+  .tab[aria-selected="true"] .chip-pot { color: inherit; opacity: .75; }
   #podscreen { position: relative; min-height: 360px; }
   #podscreen canvas { margin: auto; }
   .fakead { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.85); color: #ECEAE4; font-family: var(--mono); font-size: 18px; }
   /* Above body.playing .stage (40) and .exit (41): a sheet opened from the
      full-bleed toggle used to render UNDERNEATH the game, so tapping Ranked
      while signed out looked like a dead button. */
-  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 60; margin: 0; }
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; z-index: 60; margin: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .sheet[hidden] { display: none; }
-  .sheet-in { width: 100%; max-width: 480px; background: var(--surface); border: 1px solid var(--rule); padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; position: relative; }
+  /* With a soft keyboard up on a small phone the 422px sheet ran off the top
+     of the screen and took the close button and the heading with it. */
+  .sheet-in { width: 100%; max-width: 480px; max-height: 100svh; overflow-y: auto; background: var(--surface); border: 1px solid var(--rule); padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; position: relative; }
   .step-login:not([hidden]), .step-adult:not([hidden]) { display: grid; gap: 10px; }
   .sheet h3 { margin: 0; font-size: 20px; }
   .sheet p { margin: 0; color: var(--muted); font-size: 14px; }
   .sheet label { font-size: 13px; color: var(--muted); }
-  .sheet input[type=email] { font: inherit; padding: 10px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+  /* type=text included so #nick matches: it was inheriting 13px, and any
+     input under 16px makes iOS Safari zoom the page on focus and never zoom
+     back, stranding the player at 1.3x on a game page. */
+  .sheet input[type=email], .sheet input[type=text] { font: inherit; font-size: 16px; padding: 12px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
   .sheet .chk { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; }
-  .sheet .go { font-family: var(--mono); font-weight: 600; font-size: 14px; padding: 11px; background: var(--accent); color: var(--on-accent); border: 0; cursor: pointer; }
-  .sheet .close { position: absolute; top: 6px; right: 8px; background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; }
+  .sheet .go { font-family: var(--mono); font-weight: 600; font-size: 14px; padding: 13px; min-height: 44px; background: var(--accent); color: var(--on-accent); border: 0; cursor: pointer; }
+  /* Was 25x28. With no backdrop-tap and no Escape close, this was the only
+     way out of a sheet, at 36% of the recommended target area. */
+  .sheet .close { position: absolute; top: 2px; right: 4px; width: 44px; height: 44px; display: grid; place-items: center; padding: 0; background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; }
   .persona { display: flex; border: 1px solid var(--rule); }
-  .persona label { flex: 1; text-align: center; padding: 8px; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .persona label { flex: 1; text-align: center; padding: 13px 8px; min-height: 44px; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
   .persona label:has(input:checked) { background: var(--ink); color: var(--bg); }
   .persona input { position: absolute; opacity: 0; width: 0; height: 0; }
   .sheet textarea { font: inherit; padding: 10px; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); resize: vertical; }
   .muted { color: var(--muted); }
   .oauth { font: inherit; font-weight: 700; padding: 11px; background: var(--bg); color: var(--ink); border: 1px solid var(--ink); cursor: pointer; }
   .or { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: center; }
-  .toast { font-family: var(--mono); font-size: 13px; padding: 8px 12px; background: var(--ink); color: var(--bg); }
+  /* Fixed overlay above the stage (40) and the sheets (60). As a normal flow
+     child it shifted the whole game down 64px when it appeared, and during
+     play it rendered UNDERNEATH the stage, so "ranked: 7 verified." -- the
+     confirmation for the thing people are competing for -- was never seen. */
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 70; width: calc(100% - 32px); max-width: 456px; text-align: center; font-family: var(--mono); font-size: 13px; padding: 10px 12px; background: var(--ink); color: var(--bg); }
   .toast[hidden] { display: none; }
   /* Three games, three equal pills, always all visible. No horizontal scroll. */
   .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
@@ -135,7 +154,13 @@
      The 360x640 world is unchanged, so everyone still sees exactly the same
      field of play. It just stops being letterboxed into a third of a phone. */
   body.playing .top, body.playing .nav, body.playing .tabs,
-  body.playing .potline, body.playing .board, body.playing .share { display: none; }
+  body.playing .potline, body.playing .board, body.playing .foot { display: none; }
+  /* The share button is hidden DURING a run and back on the death screen.
+     It used to be hidden by `body.playing` throughout, and since `playing`
+     survives death, the one moment a player wants to share a score was the
+     one moment the button was display:none. */
+  body.playing #share { display: none; }
+  body.playing.dead #share:not([hidden]) { display: block; position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 42; width: auto; max-width: 456px; margin: 0 auto; }
   body.playing { padding: 0; }
   body.playing .stage { position: fixed; inset: 0; z-index: 40; background: #0f1116; display: flex; align-items: center; justify-content: center; }
   /* Explicit height: as a flex item with only an aspect-ratio it sized from
@@ -147,9 +172,10 @@
               align-items: center; justify-content: center; text-align: center; padding: 24px; font-family: var(--mono); font-size: 15px; }
     .app { display: none; }
   }
-  .exit { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); right: 8px; z-index: 41; display: none;
-          font-family: var(--mono); font-size: 16px; line-height: 1; width: 40px; height: 40px; border-radius: 999px;
-          border: 1px solid rgba(255,255,255,.22); background: rgba(10,12,16,.55); color: #cfd3d8; cursor: pointer; }
+  .exit { position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); right: 8px; z-index: 41; display: none; width: 48px; height: 48px;
+          font-family: var(--mono); font-size: 16px; line-height: 1; border-radius: 999px;
+          /* .72 not .55: over Rent's tan sky the glyph measured 4.14:1. */
+          border: 1px solid rgba(255,255,255,.28); background: rgba(10,12,16,.72); color: #E6E9EC; cursor: pointer; }
   body.playing .exit { display: block; }
   /* Top-left, mirroring the exit at top-right. At the bottom it sat directly
      on the mobile browser's URL bar, so half the hit area belonged to Chrome
@@ -157,7 +183,14 @@
      so this corner is free. */
   body.playing .mode { top: calc(8px + env(safe-area-inset-top, 0px)); bottom: auto; left: 8px; z-index: 41; }
   body.playing .mode button { font-size: 12px; padding: 13px 15px; }
-  #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: calc(100dvh - 104px); display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: manipulation; }
+  /* Chrome above this measures 175px (.top 40 + .nav 44 + .tabs 47 + gaps).
+     The old budget of 104px cut ~70px off the canvas on a 360x640 and a
+     375x667 phone and pushed the Practice/Ranked pill 17px BELOW the fold on
+     first paint, so on the two most common small phones the control deciding
+     whether your run is worth money did not exist until after your first
+     death. svh, not dvh: the menu has to fit while the URL bar is showing,
+     which is the viewport at its smallest. */
+  #screen { background: #0f1116; border: 1px solid var(--rule); aspect-ratio: 360 / 640; max-height: calc(100svh - 183px); margin-inline: auto; display: flex; justify-content: center; align-items: center; overflow: hidden; touch-action: manipulation; }
   #screen canvas { touch-action: none; }
   /* Mode rides on top of the sky instead of taking a row of its own. */
   .mode { position: absolute; bottom: 8px; left: 8px; z-index: 3; display: flex; border: 1px solid rgba(255,255,255,.3); background: rgba(10,12,16,.72); touch-action: none; }
@@ -186,7 +219,6 @@
   .board li:last-child { border-bottom: 0; }
   .board li .rank { font-family: var(--mono); color: var(--muted); }
   .board li .score { font-family: var(--mono); font-weight: 600; }
-  .board li.you .rank { color: var(--accent); }
   .board .empty { padding: 12px; color: var(--muted); font-size: 14px; }
   .foot { font-size: 12px; color: var(--muted); font-family: var(--mono); display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .foot a { color: var(--muted); display: inline-block; padding: 13px 0; min-height: 44px; }
@@ -197,7 +229,7 @@
 <div class="app">
   <div class="top">
     <a class="wm" href="#">50<b>/</b>50</a>
-    <div class="potbar" id="pot"><span class="n">$0.00</span><span class="l">pot</span></div>
+    <div class="potbar" id="pot"><span class="n" data-state="pending">$&mdash;.&mdash;</span><span class="l">pot</span></div>
     <a class="who" href="#" id="signin-link">sign in</a>
   </div>
 
@@ -264,7 +296,9 @@
       <div class="step-login">
         <h3>Ranked needs an account.</h3>
         <p>So we know who to pay. That's the whole reason. No newsletter unless you ask for one.</p>
-        <label class="chk"><input id="adult-pre" type="checkbox"> I'm 18 or older (19 where that's the age of majority). Quebec can play but isn't eligible for the pot. I'll show ID once if I win.</label>
+        <label class="chk"><input id="adult-pre" type="checkbox"> I'm 18 or older, or the age of majority where I live if that's higher.</label>
+        <p class="muted" style="font-size:12px;margin:0">Quebec can play but can't take a pot. Winners show ID once, to prove age.</p>
+        <p id="gate-msg" class="muted" style="font-size:13px;margin:0;color:var(--accent-ink,var(--accent))" hidden></p>
         <button type="button" class="oauth" id="g-google">Continue with Google</button>
         <button type="button" class="oauth" id="g-discord">Continue with Discord</button>
         <div class="or">or a link by email</div>

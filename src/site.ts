@@ -8,8 +8,8 @@ import { api, getProfile, onSession, setAdult, setHandle, signInWith, signInWith
 type GameKey = keyof typeof GAMES;
 type Section = "games" | "pod" | "shop";
 
-const POTS: Record<GameKey, { cents: number; confirmed: boolean }> = {
-  pigeon: { cents: 0, confirmed: false }, rent: { cents: 0, confirmed: false }, slumlord: { cents: 0, confirmed: false },
+const POTS: Record<GameKey, { cents: number; confirmed: boolean; loaded: boolean }> = {
+  pigeon: { cents: 0, confirmed: false, loaded: false }, rent: { cents: 0, confirmed: false, loaded: false }, slumlord: { cents: 0, confirmed: false, loaded: false },
 };
 const TOP: Record<GameKey, { handle: string; score: number }[]> = { pigeon: [], rent: [], slumlord: [] };
 
@@ -59,14 +59,21 @@ const say = (m: string, ms = 3500) => { status.textContent = m; status.hidden = 
 function renderChips() {
   for (const t of document.querySelectorAll<HTMLButtonElement>(".tab")) {
     const g = t.dataset.g as GameKey;
-    t.querySelector(".chip-pot")!.textContent = fmt(POTS[g].cents);
+    t.querySelector(".chip-pot")!.textContent = POTS[g].loaded ? fmt(POTS[g].cents) : "$\u2014.\u2014";
     t.setAttribute("aria-selected", String(g === current));
   }
 }
 function renderPot() {
   const p = POTS[current];
-  potEl.querySelector(".n")!.textContent = fmt(p.cents);
-  potEl.querySelector(".l")!.textContent = p.confirmed ? "pot · confirmed" : "pot";
+  const n = potEl.querySelector(".n") as HTMLElement;
+  // The markup ships "$—.—" rather than "$0.00". A giant orange $0.00 on every
+  // cold load reads as a dead product, and the catch around the fetch meant a
+  // failed call left it there permanently. The honest small number is the
+  // brand; zero is not. Only a real figure clears the pending state.
+  if (p.loaded) { n.textContent = fmt(p.cents); n.removeAttribute("data-state"); }
+  // "pot" alone, on a number the rules call an estimate that can move DOWN, is
+  // the chrome misleading people the rules were careful not to.
+  potEl.querySelector(".l")!.textContent = p.confirmed ? "pot · final" : "pot · estimate";
 }
 function renderTop() {
   const rows = TOP[current];
@@ -79,7 +86,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 async function loadLive() {
   try {
     const p = await api<{ pots: Record<string, { est_pot_cents: number; confirmed: boolean }> }>("/pots");
-    for (const g of Object.keys(POTS) as GameKey[]) { const x = p.pots[g]; if (x) POTS[g] = { cents: x.est_pot_cents, confirmed: x.confirmed }; }
+    for (const g of Object.keys(POTS) as GameKey[]) { const x = p.pots[g]; if (x) POTS[g] = { cents: x.est_pot_cents, confirmed: x.confirmed, loaded: true }; }
   } catch {}
   try {
     const lb = await api<{ rows: { handle: string; score: number }[] }>("/leaderboard/" + current);
@@ -242,9 +249,15 @@ onSession(async () => {
 /** Age is confirmed BEFORE the provider hop, so nobody comes back from Google
  *  to a second form. The box is remembered and applied once the session lands. */
 const adultPre = sheet.querySelector("#adult-pre") as HTMLInputElement;
+const gateMsg = sheet.querySelector("#gate-msg") as HTMLElement;
 function gateOk(): boolean {
-  if (adultPre.checked) { try { localStorage.setItem("5050.adult", "1"); } catch {} return true; }
-  say("tick the 18+ box first. it is the one rule we cannot bend.");
+  if (adultPre.checked) { try { localStorage.setItem("5050.adult", "1"); } catch {} gateMsg.hidden = true; return true; }
+  // Not say(). The toast lives in the page behind a fixed, scrimmed sheet, so
+  // this explanation rendered under the dimming layer half a screen above the
+  // button that was just pressed, and the most important control in the
+  // product read as a dead button.
+  gateMsg.textContent = "Tick the 18+ box first. It's the one rule we can't bend.";
+  gateMsg.hidden = false;
   adultPre.focus();
   return false;
 }
@@ -349,6 +362,20 @@ function offerShare(score: number) {
 }
 
 $("exit").addEventListener("click", () => document.body.classList.remove("playing"));
+
+// Sheets had exactly one exit: a 25x28 close button that, with a soft keyboard
+// up on a small phone, was pushed off the top of the screen along with the
+// heading. A backdrop tap and Escape are the two things every user already
+// tries, and neither did anything.
+for (const id of ["signin", "account", "complain"]) {
+  const el = document.getElementById(id);
+  el?.addEventListener("pointerdown", (e) => { if (e.target === el) el.hidden = true; });
+}
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  const open = document.querySelector<HTMLElement>(".sheet:not([hidden])");
+  if (open) { open.hidden = true; e.preventDefault(); }
+});
 
 const streak = bumpStreak();
 function paintMeta() {

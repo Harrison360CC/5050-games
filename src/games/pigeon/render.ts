@@ -1,5 +1,5 @@
 import { plural, type Hud } from "../mount";
-import { drawChase } from "../hud";
+import { drawChase, drawDeathCard } from "../hud";
 import { PIGEON, WORLD_H, WORLD_W, pigeonY, type PigeonState } from "../../sim/pigeon";
 
 const C = {
@@ -18,7 +18,25 @@ const C = {
 };
 
 
-const DEATH_LINES = ["splat.", "the pigeon has had enough.", "while they're out partying btw.", "my reaction to that: nothing.", "i'm so sorry.", "write it down. scrib doon."];
+/* One pool per game. Two thirds of these used to be the same four lines
+ * copy-pasted across all three, so three different games felt like one game
+ * with three skins, and the shared ones were borrowed meme cadence rather
+ * than landlord satire. Kept under 26 characters: fillText is centred with
+ * no wrap in a 360px world, so anything longer shears off BOTH edges. */
+const DEATH_LINES = [
+  "splat.",
+  "the pigeon has had enough.",
+  "gravity, as advertised.",
+  "that was a window.",
+  "the ledge had plans.",
+  "wings are a suggestion.",
+  "the city wins again.",
+  "landed. wrong way up.",
+  "rent's due up here too.",
+  "a bird of poor judgment.",
+  "down, like the lease.",
+  "the sky is not for you.",
+];
 
 export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: number, hud: Hud) {
   ctx.save();
@@ -126,19 +144,21 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
     ctx.fillText("tap to flap. it gets worse.", WORLD_W / 2, 216);
   }
   if (s.dead) {
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    { const _l = DEATH_LINES[hud.seed % DEATH_LINES.length]!; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
-      const _w = Math.min(WORLD_W - 16, Math.max(260, ctx.measureText(_l).width + 36));
-      ctx.fillRect((WORLD_W - _w) / 2, 240, _w, 140); }
-    ctx.fillStyle = C.text;
-    ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
-    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, WORLD_W / 2, 285);
+    const body = `${plural(s.score, "gap", "gaps")}. tap to go again.`;
+    // `${s.gaps.length} buildings` used to follow this: it counted the gap
+    // objects still alive on screen, not buildings passed, so a one-gap run
+    // read "1 buildings". Wrong number, wrong plural, on a screen people
+    // screenshot.
+    const flew = `${(s.tick / 60).toFixed(1)}s in the air.`;
+    const ys = drawDeathCard(ctx, WORLD_W, 240, DEATH_LINES[hud.seed % DEATH_LINES.length]!, [body, flew, hud.note, hud.sub]);
+    let i = 0;
+    ctx.fillStyle = C.text; ctx.font = "700 16px Silkscreen, 'IBM Plex Mono', monospace";
+    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, WORLD_W / 2, ys[i++]!);
     ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
-    ctx.fillStyle = "rgba(248,249,250,0.8)";
-    ctx.fillText(`${plural(s.score, "gap", "gaps")}. tap to go again.`, WORLD_W / 2, 315);
-    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 365); }
-    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(248,249,250,0.75)"; ctx.fillText(hud.sub, WORLD_W / 2, 388); }
-    ctx.fillText(`${(s.tick / 60).toFixed(1)}s of flying, ${s.gaps.length} buildings`, WORLD_W / 2, 340);
+    ctx.fillStyle = "rgba(248,249,250,0.8)"; ctx.fillText(body, WORLD_W / 2, ys[i++]!);
+    ctx.fillStyle = "rgba(248,249,250,0.65)"; ctx.fillText(flew, WORLD_W / 2, ys[i++]!);
+    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, ys[i++]!); }
+    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(248,249,250,0.75)"; ctx.fillText(hud.sub, WORLD_W / 2, ys[i++]!); }
   }
 
   ctx.restore();

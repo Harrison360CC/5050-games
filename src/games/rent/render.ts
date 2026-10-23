@@ -1,17 +1,28 @@
 import { plural, type Hud } from "../mount";
-import { drawChase } from "../hud";
+import { drawChase, drawDeathCard } from "../hud";
 import { RENT, RENT_GROUND, RENT_H, RENT_W, rentSpeed, type RentState } from "../../sim/rent";
 
 const C = { sky: "#d9c7a3", sky2: "#b48f5c", far: "#8d6b47", bldg: "#5a3f2b", road: "#3a3230", line: "#d9c7a3", skin: "#e8b48f", boxers: "#4f8fd1", hair: "#2b1a12", ink: "#1a1410", paper: "#f5efe0", red: "#c62f2f", couch: "#7a4f8a", cone: "#f08a24", text: "#1a1410" };
 
 
+/* One pool per game. Two thirds of these used to be the same four lines
+ * copy-pasted across all three, so three different games felt like one game
+ * with three skins, and the shared ones were borrowed meme cadence rather
+ * than landlord satire. Kept under 26 characters: fillText is centred with
+ * no wrap in a 360px world, so anything longer shears off BOTH edges. */
 const DEATH_LINES = [
   "evicted.",
-  "the landlord sends his regards.",
-  "while they're out partying btw.",
-  "my reaction to that: nothing.",
-  "i'm so sorry.",
-  "write that one down. scrib doon.",
+  "the landlord says hi.",
+  "he had a spare key.",
+  "caught on the stairs.",
+  "notice served.",
+  "30 days to vacate.",
+  "deposit: not returned.",
+  "rent collected.",
+  "lease terminated.",
+  "he jogs now. of course.",
+  "he wants a word.",
+  "the hallway was a trap.",
 ];
 
 export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: number, hud: Hud) {
@@ -72,15 +83,15 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
     ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(26,20,16,0.8)"; ctx.fillText("tap to jump. he is faster than you think.", RENT_W / 2, 326);
   }
   if (s.dead) {
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; { const _l = DEATH_LINES[hud.seed % DEATH_LINES.length]!; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
-      const _w = Math.min(RENT_W - 16, Math.max(260, ctx.measureText(_l).width + 36));
-      ctx.fillRect((RENT_W - _w) / 2, 240, _w, 140); }
-    ctx.fillStyle = C.paper; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
-    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, RENT_W / 2, 285);
+    const body = `${plural(s.dodged, "day", "days")}. tap to go again.`;
+    const ys = drawDeathCard(ctx, RENT_W, 240, DEATH_LINES[hud.seed % DEATH_LINES.length]!, [body, hud.note, hud.sub]);
+    let i = 0;
+    ctx.fillStyle = C.paper; ctx.font = "700 16px Silkscreen, 'IBM Plex Mono', monospace";
+    ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, RENT_W / 2, ys[i++]!);
     ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
-    ctx.fillText(`${plural(s.dodged, "day", "days")}. tap to go again.`, RENT_W / 2, 320);
-    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 346); }
-    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, RENT_W / 2, 368); }
+    ctx.fillText(body, RENT_W / 2, ys[i++]!);
+    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, ys[i++]!); }
+    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, RENT_W / 2, ys[i++]!); }
   }
   ctx.restore();
 }
