@@ -324,7 +324,7 @@ function paintFx() {
   hb.textContent = `HAPTICS: ${pod.fx.prefs.haptics ? "ON" : "OFF"}`;
 }
 $("fx-sound").addEventListener("click", () => { if (!pod) return; pod.fx.unlock(); pod.fx.setSound(!pod.fx.prefs.sound); if (pod.fx.prefs.sound) { pod.fx.hum(true); pod.fx.tick(); } paintFx(); });
-$("fx-haptics").addEventListener("click", () => { if (!pod) return; pod.fx.setHaptics(!pod.fx.prefs.haptics); if (pod.fx.prefs.haptics) pod.fx.buzz(14); paintFx(); });
+$("fx-haptics").addEventListener("click", () => { if (!pod) return; pod.fx.setHaptics(!pod.fx.prefs.haptics); if (pod.fx.prefs.haptics) pod.fx.buzz(25); paintFx(); });
 
 // ---- nav ----
 document.querySelector(".tabs")!.addEventListener("click", (e) => { const t = (e.target as HTMLElement).closest<HTMLButtonElement>(".tab"); if (t) show(t.dataset.g as GameKey); });
