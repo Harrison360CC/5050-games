@@ -67,6 +67,9 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
 
   function loop(now: number) {
     if (!alive) return;
+    // Nothing to draw while the tab is in the background. Saves battery and
+    // stops the tick accumulator building up a catch-up burst on return.
+    if (document.hidden) { runner.frame(now); requestAnimationFrame(loop); return; }
     runner.frame(now);
     if (runner.dead && !submitted) {
       submitted = true;

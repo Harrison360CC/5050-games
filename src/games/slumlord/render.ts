@@ -4,6 +4,8 @@ import { FLOOR_H, SL_H, SL_W, VIOLATIONS, type SlumlordState } from "../../sim/s
 
 const C = { sky: "#8fa3b8", sky2: "#c9d3dc", ground: "#4a4a4a", brick: "#9a5a3c", brick2: "#7d4730", window: "#f2d16b", frame: "#2a2420", text: "#1a1410", paper: "#f5efe0", ok: "#2e8b57", red: "#c62f2f" };
 
+let sky: CanvasGradient | null = null;
+
 const DEATH_LINES = [
   "condemned.",
   "the inspector has questions.",
@@ -16,9 +18,14 @@ const DEATH_LINES = [
 export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, scale: number, hud: Hud) {
   ctx.save();
   ctx.scale(scale, scale);
-  const g = ctx.createLinearGradient(0, 0, 0, SL_H);
-  g.addColorStop(0, C.sky); g.addColorStop(1, C.sky2);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, SL_W, SL_H);
+  // Cached: the sky never changes, so building it once beats building it 60
+  // times a second on a phone.
+  if (!sky) {
+    sky = ctx.createLinearGradient(0, 0, 0, SL_H);
+    sky.addColorStop(0, C.sky);
+    sky.addColorStop(1, C.sky2);
+  }
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, SL_W, SL_H);
 
   // camera: always keep the floor you are actually aiming at in the middle of the screen,
   // from the very first drop, not just once the tower is tall

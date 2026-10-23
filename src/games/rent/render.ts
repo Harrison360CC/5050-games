@@ -4,6 +4,8 @@ import { RENT, RENT_GROUND, RENT_H, RENT_W, rentSpeed, type RentState } from "..
 
 const C = { sky: "#d9c7a3", sky2: "#b48f5c", far: "#8d6b47", bldg: "#5a3f2b", road: "#3a3230", line: "#d9c7a3", skin: "#e8b48f", boxers: "#4f8fd1", hair: "#2b1a12", ink: "#1a1410", paper: "#f5efe0", red: "#c62f2f", couch: "#7a4f8a", cone: "#f08a24", text: "#1a1410" };
 
+let sky: CanvasGradient | null = null;
+
 const DEATH_LINES = [
   "evicted.",
   "the landlord sends his regards.",
@@ -16,9 +18,14 @@ const DEATH_LINES = [
 export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: number, hud: Hud) {
   ctx.save();
   ctx.scale(scale, scale);
-  const g = ctx.createLinearGradient(0, 0, 0, RENT_GROUND);
-  g.addColorStop(0, C.sky); g.addColorStop(1, C.sky2);
-  ctx.fillStyle = g; ctx.fillRect(0, 0, RENT_W, RENT_H);
+  // Cached: the sky never changes, so building it once beats building it 60
+  // times a second on a phone.
+  if (!sky) {
+    sky = ctx.createLinearGradient(0, 0, 0, RENT_GROUND);
+    sky.addColorStop(0, C.sky);
+    sky.addColorStop(1, C.sky2);
+  }
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, RENT_W, RENT_H);
 
   // far buildings parallax
   ctx.fillStyle = C.far;
@@ -78,7 +85,7 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
     ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, RENT_W / 2, 285);
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillText(`${s.dodged} days. tap to go again.`, RENT_W / 2, 320);
-    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 315); }
+    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 346); }
   }
   ctx.restore();
 }

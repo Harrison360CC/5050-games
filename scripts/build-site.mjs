@@ -1,7 +1,12 @@
 import { build } from "esbuild";
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 const r = await build({ entryPoints: ["src/site.ts"], bundle: true, minify: true, format: "iife", target: "es2020", write: false });
-const html = readFileSync("site/index.html", "utf8").replace("<!--JS-->", `<script>${r.outputFiles[0].text}</script>`);
+// Replace with a FUNCTION, not a string: in a replacement string "$&", "$`" and
+// "$'" are substitution patterns, so any dollar sign in the bundle (template
+// literals, money strings) silently corrupts the output.
+const js = r.outputFiles[0].text;
+if (js.includes("</script")) throw new Error("bundle contains </script, cannot inline");
+const html = readFileSync("site/index.html", "utf8").replace("<!--JS-->", () => `<script>${js}</script>`);
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/index.html", html);
 // static pages, served at clean URLs by Cloudflare Pages (/rules -> rules.html)

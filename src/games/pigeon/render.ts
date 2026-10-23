@@ -17,6 +17,8 @@ const C = {
   text: "#f8f9fa",
 };
 
+let sky: CanvasGradient | null = null;
+
 const DEATH_LINES = ["splat.", "the pigeon has had enough.", "while they're out partying btw.", "my reaction to that: nothing.", "i'm so sorry.", "write it down. scrib doon."];
 
 export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: number, hud: Hud) {
@@ -25,10 +27,14 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
   const py = pigeonY(s);
 
   // sky
-  const g = ctx.createLinearGradient(0, 0, 0, WORLD_H);
-  g.addColorStop(0, C.sky);
-  g.addColorStop(1, C.sky2);
-  ctx.fillStyle = g;
+  // Cached: the sky never changes, so building it once beats building it 60
+  // times a second on a phone.
+  if (!sky) {
+    sky = ctx.createLinearGradient(0, 0, 0, WORLD_H);
+    sky.addColorStop(0, C.sky);
+    sky.addColorStop(1, C.sky2);
+  }
+  ctx.fillStyle = sky;
   ctx.fillRect(0, 0, WORLD_W, WORLD_H);
 
   // background buildings (parallax, derived from tick so it's cheap)
@@ -136,7 +142,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
     ctx.font = "15px system-ui, sans-serif";
     ctx.fillStyle = "rgba(248,249,250,0.8)";
     ctx.fillText(`${s.score} gaps. tap to go again.`, WORLD_W / 2, 315);
-    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 315); }
+    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 365); }
     ctx.fillText(`${(s.tick / 60).toFixed(1)}s of flying, ${s.gaps.length} buildings`, WORLD_W / 2, 340);
   }
 

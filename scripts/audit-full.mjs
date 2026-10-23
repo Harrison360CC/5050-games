@@ -1,6 +1,6 @@
 import { chromium } from "playwright";
 import http from "node:http"; import fs from "node:fs"; import path from "node:path";
-const ROOT=path.resolve("dist");
+const ROOT=process.env.PIN;
 const srv=http.createServer((q,r)=>{let u=decodeURIComponent(q.url.split("?")[0]);if(u==="/")u="/index.html";if(!path.extname(u))u+=".html";const f=path.join(ROOT,u);if(!f.startsWith(ROOT)||!fs.existsSync(f)){r.writeHead(404);return r.end();}r.writeHead(200,{"content-type":u.endsWith(".html")?"text/html":"text/plain"});r.end(fs.readFileSync(f));});
 await new Promise(r=>srv.listen(0,r)); const U=`http://127.0.0.1:${srv.address().port}/`;
 const EXE="/opt/pw-browsers/chromium-1194/chrome-linux/chrome";

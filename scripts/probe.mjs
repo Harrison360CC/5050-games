@@ -1,0 +1,11 @@
+import { chromium } from "playwright";
+const SNAP="/tmp/claude-0/-home-claude/d4ae8718-6c94-5c70-925d-a2e103014186/scratchpad/snap/dist";
+const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const c = await b.newContext({viewport:{width:393,height:852}});
+await c.route("**/api/**", r=>r.fulfill({json:{}}));
+const p = await c.newPage();
+p.on("pageerror",e=>console.log("PAGEERROR:",String(e).slice(0,300)));
+p.on("console",m=>{ if(m.type()==="error") console.log("CONSOLE:",m.text().slice(0,200)); });
+await p.goto(`file://${SNAP}/index.html`); await p.waitForTimeout(2000);
+console.log(await p.evaluate(()=>({ screenHTML: document.getElementById("screen")?.outerHTML.slice(0,300), stage: document.querySelector(".stage")?.innerHTML.slice(0,400) })));
+await b.close();
