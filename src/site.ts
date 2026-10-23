@@ -353,3 +353,5 @@ setInterval(paintMeta, 60000);
 show("pigeon");
 void flushOutbox();
 window.addEventListener("online", () => void flushOutbox());
+window.addEventListener("pageshow", (e) => { if ((e as PageTransitionEvent).persisted) { void loadLive(); void flushOutbox(); paintMeta(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { void flushOutbox(); paintMeta(); } });

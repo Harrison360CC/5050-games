@@ -1,10 +1,9 @@
-import type { Hud } from "../mount";
+import { plural, type Hud } from "../mount";
 import { drawChase } from "../hud";
 import { RENT, RENT_GROUND, RENT_H, RENT_W, rentSpeed, type RentState } from "../../sim/rent";
 
 const C = { sky: "#d9c7a3", sky2: "#b48f5c", far: "#8d6b47", bldg: "#5a3f2b", road: "#3a3230", line: "#d9c7a3", skin: "#e8b48f", boxers: "#4f8fd1", hair: "#2b1a12", ink: "#1a1410", paper: "#f5efe0", red: "#c62f2f", couch: "#7a4f8a", cone: "#f08a24", text: "#1a1410" };
 
-let sky: CanvasGradient | null = null;
 
 const DEATH_LINES = [
   "evicted.",
@@ -18,14 +17,7 @@ const DEATH_LINES = [
 export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: number, hud: Hud) {
   ctx.save();
   ctx.scale(scale, scale);
-  // Cached: the sky never changes, so building it once beats building it 60
-  // times a second on a phone.
-  if (!sky) {
-    sky = ctx.createLinearGradient(0, 0, 0, RENT_GROUND);
-    sky.addColorStop(0, C.sky);
-    sky.addColorStop(1, C.sky2);
-  }
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, RENT_W, RENT_H);
+  ctx.fillStyle = C.sky; ctx.fillRect(0, 0, RENT_W, RENT_H);
 
   // far buildings parallax
   ctx.fillStyle = C.far;
@@ -71,22 +63,24 @@ export function drawRent(ctx: CanvasRenderingContext2D, s: RentState, scale: num
 
   // HUD
   ctx.fillStyle = C.text; ctx.textAlign = "center";
-  ctx.font = "bold 48px system-ui, sans-serif"; ctx.fillText(String(s.dodged), RENT_W / 2, 80);
-  ctx.font = "14px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`days dodged · best ${hud.best}`, RENT_W / 2, 102);
+  ctx.font = "600 40px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillText(String(s.dodged), RENT_W / 2, 80);
+  ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(26,20,16,0.65)"; ctx.fillText(`days dodged · best ${hud.best}`, RENT_W / 2, 102);
   drawChase(ctx, hud, s.dodged, RENT_W, "rgba(26,20,16,0.7)", "#c1440e");
 
   if (!hud.started && hud.firstRun) {
-    ctx.fillStyle = C.text; ctx.font = "bold 22px system-ui, sans-serif"; ctx.fillText("RENT'S DUE", RENT_W / 2, 300);
-    ctx.font = "15px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.8)"; ctx.fillText("tap to jump. he is faster than you think.", RENT_W / 2, 326);
+    ctx.fillStyle = C.text; ctx.font = "700 18px Silkscreen, 'IBM Plex Mono', monospace"; ctx.fillText("RENT'S DUE", RENT_W / 2, 300);
+    ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(26,20,16,0.8)"; ctx.fillText("tap to jump. he is faster than you think.", RENT_W / 2, 326);
   }
   if (s.dead) {
-    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(30, 240, RENT_W - 60, 140);
-    ctx.fillStyle = C.paper; ctx.font = "bold 24px system-ui, sans-serif";
+    ctx.fillStyle = "rgba(0,0,0,0.6)"; { const _l = DEATH_LINES[hud.seed % DEATH_LINES.length]!; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
+      const _w = Math.min(RENT_W - 16, Math.max(260, ctx.measureText(_l).width + 36));
+      ctx.fillRect((RENT_W - _w) / 2, 240, _w, 140); }
+    ctx.fillStyle = C.paper; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
     ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, RENT_W / 2, 285);
-    ctx.font = "15px system-ui, sans-serif";
-    ctx.fillText(`${s.dodged} days. tap to go again.`, RENT_W / 2, 320);
-    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 346); }
-    if (hud.sub) { ctx.font = "13px system-ui, sans-serif"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, RENT_W / 2, 368); }
+    ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.fillText(`${plural(s.dodged, "day", "days")}. tap to go again.`, RENT_W / 2, 320);
+    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, RENT_W / 2, 346); }
+    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(245,239,224,0.8)"; ctx.fillText(hud.sub, RENT_W / 2, 368); }
   }
   ctx.restore();
 }

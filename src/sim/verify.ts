@@ -46,7 +46,19 @@ export function verify(replay: Replay): VerifyResult {
   if (replay.tapMs !== undefined) {
     if (!Array.isArray(replay.tapMs) || replay.tapMs.length !== replay.taps.length)
       return { ok: false, reason: "tap timing does not match taps" };
-    for (const m of replay.tapMs) if (!Number.isFinite(m) || m < 0 || m > 30 * 60_000) return { ok: false, reason: "bad tap timing" };
+    const budgetMs = (replay.endTick / 60) * 1000;
+    let prevMs = 0, prevTick = 0;
+    for (let i = 0; i < replay.tapMs.length; i++) {
+      const m = replay.tapMs[i]!;
+      if (!Number.isFinite(m) || m < 0) return { ok: false, reason: "bad tap timing" };
+      if (m > budgetMs * 1.5 + 3000) return { ok: false, reason: "run took far longer than it claims" };
+      // A tap arriving long after its tick means the game was frozen in the
+      // background. The clamp in the runner forgives a brief interruption; it
+      // should not hand anyone unlimited thinking time between obstacles.
+      const tickGapMs = ((replay.taps[i] ?? 0) - prevTick) / 60 * 1000;
+      if (m - prevMs > tickGapMs + 5000) return { ok: false, reason: "run was paused mid-way" };
+      prevMs = m; prevTick = replay.taps[i] ?? 0;
+    }
   }
 
   const state = sim.init(replay.seed);

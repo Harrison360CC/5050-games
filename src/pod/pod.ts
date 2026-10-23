@@ -126,6 +126,7 @@ export function mountPod(container: HTMLElement, opts: {
 
   let last = 0;
   function loop(now: number) {
+    if (document.hidden || canvas.offsetParent === null) { requestAnimationFrame(loop); return; }
     if (!alive) return;
     const dt = Math.min(50, now - last); last = now;
     // walk toward target

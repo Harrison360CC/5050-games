@@ -31,6 +31,9 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
   const canvas = document.createElement("canvas");
   canvas.style.display = "block";
   canvas.style.touchAction = "none";
+  canvas.setAttribute("role", "application");
+  canvas.setAttribute("aria-label", `${def.sim.id}: tap or press space to play`);
+  canvas.tabIndex = 0;
   container.appendChild(canvas);
   const ctx = canvas.getContext("2d")!;
   const key = `${def.sim.id}.best`;
@@ -75,7 +78,14 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
     if (runner.started && !announced) { announced = true; opts.onStart?.(); }
     // Nothing to draw while the tab is in the background. Saves battery and
     // stops the tick accumulator building up a catch-up burst on return.
-    if (document.hidden) { runner.frame(now); requestAnimationFrame(loop); return; }
+    // Death has to be submitted even if the app went to the background on the
+    // frame it happened, so check that BEFORE bailing out of drawing.
+    if (document.hidden || canvas.offsetParent === null) {
+      runner.frame(now);
+      if (runner.dead && !submitted) { submitted = true; opts.onRun(runner.replay(), runner.score); }
+      requestAnimationFrame(loop);
+      return;
+    }
     runner.frame(now);
     if (runner.dead && !submitted) {
       submitted = true;
@@ -89,6 +99,7 @@ export function mountGame<S>(container: HTMLElement, def: GameDef<S>, opts: {
     const sub = waiting ? "getting your course…"
       : !t.ranked ? "practice. this one does not count."
       : t.closes ? `${t.rank ? ordinal(t.rank) + " this week · " : ""}pot closes in ${t.closes}` : "";
+    container.classList.toggle("live", runner.started && !runner.dead);
     def.draw(ctx, runner.state, scale, { best, started: runner.started, seed: runner.seed, target: t.score, leader: t.handle, ranked: t.ranked, waiting, note, sub, firstRun });
     requestAnimationFrame(loop);
   }
@@ -112,9 +123,10 @@ function lsSet(k: string, v: string) { try { localStorage.setItem(k, v); } catch
 function deathNote(score: number, best: number, target: number): string {
   if (target > 0 && score > target) return "that is the score to beat. for now.";
   if (score > best && best > 0) return `new best by ${score - best}.`;
+  if (score === best && best > 0) return "matched your best. tiebreak is going again.";
   if (score > 0 && best === 0) return "that is your best. admittedly a low bar.";
   if (target > 0 && target - score <= Math.max(3, Math.round(target * 0.12))) return `${target - score + 1} more and the lead is yours.`;
-  if (best > 0 && best - score <= 2) return `${best - score} off your best. go again.`;
+  if (best > 0 && best - score > 0 && best - score <= 2) return `${best - score} off your best. go again.`;
   return "";
 }
 
@@ -122,3 +134,6 @@ function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]!);
 }
+
+/** "1 days" is the kind of thing people screenshot to mock you. */
+export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

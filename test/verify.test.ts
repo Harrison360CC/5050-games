@@ -54,3 +54,24 @@ test("wrong sim version is rejected", () => {
   const r = verify({ game: "pigeon", version: 99, seed: 1, taps: [], endTick: 100 });
   assert.equal(r.ok, false);
 });
+
+test("tap timing: an honest run passes, a paused one does not", () => {
+  // Build a real replay, then attach the wall-clock timings a browser would
+  // have recorded for it: each tap lands when its tick lands.
+  const { replay } = botRun(42);
+  const honest = { ...replay, tapMs: replay.taps.map((t) => Math.round((t / 60) * 1000)) };
+  const a = verify(honest);
+  assert.ok(a.ok, `honest run rejected: ${a.ok ? "" : a.reason}`);
+
+  // Same run, but the player backgrounded the app for half a minute in the
+  // middle. The sim freezes, so this would otherwise be free thinking time.
+  if (replay.taps.length > 3) {
+    const paused = { ...honest, tapMs: honest.tapMs.map((m, i) => (i >= 2 ? m + 30_000 : m)) };
+    const b = verify(paused);
+    assert.equal(b.ok, false, "a 30 second mid-run pause should not verify");
+  }
+
+  // A jittery cheap phone must still pass: every tap a little late, nothing huge.
+  const jittery = { ...honest, tapMs: honest.tapMs.map((m, i) => m + i * 12 + 40) };
+  assert.ok(verify(jittery).ok, "ordinary jitter should not be treated as a pause");
+});

@@ -16,7 +16,7 @@ export function drawChase(
   if (hud.waiting) {
     ctx.textAlign = "center";
     ctx.fillStyle = accent;
-    ctx.font = "bold 15px system-ui, sans-serif";
+    ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace";
     ctx.fillText("getting your course…", worldW / 2, 126);
     return;
   }
@@ -24,13 +24,13 @@ export function drawChase(
   ctx.textAlign = "center";
   if (score > hud.target) {
     ctx.fillStyle = accent;
-    ctx.font = "bold 15px system-ui, sans-serif";
+    ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace";
     ctx.fillText(`TOP OF THE WEEK · +${score - hud.target}`, worldW / 2, 126);
     return;
   }
   const need = hud.target - score + 1;
   ctx.fillStyle = ink;
-  ctx.font = "13px system-ui, sans-serif";
+  ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace";
   const who = hud.leader ? `${hud.leader} ` : "";
   ctx.fillText(`${who}leads with ${hud.target} · ${need} to go`, worldW / 2, 126);
 }

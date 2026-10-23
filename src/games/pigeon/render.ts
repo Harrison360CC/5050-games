@@ -1,4 +1,4 @@
-import type { Hud } from "../mount";
+import { plural, type Hud } from "../mount";
 import { drawChase } from "../hud";
 import { PIGEON, WORLD_H, WORLD_W, pigeonY, type PigeonState } from "../../sim/pigeon";
 
@@ -17,7 +17,6 @@ const C = {
   text: "#f8f9fa",
 };
 
-let sky: CanvasGradient | null = null;
 
 const DEATH_LINES = ["splat.", "the pigeon has had enough.", "while they're out partying btw.", "my reaction to that: nothing.", "i'm so sorry.", "write it down. scrib doon."];
 
@@ -27,14 +26,7 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
   const py = pigeonY(s);
 
   // sky
-  // Cached: the sky never changes, so building it once beats building it 60
-  // times a second on a phone.
-  if (!sky) {
-    sky = ctx.createLinearGradient(0, 0, 0, WORLD_H);
-    sky.addColorStop(0, C.sky);
-    sky.addColorStop(1, C.sky2);
-  }
-  ctx.fillStyle = sky;
+  ctx.fillStyle = C.sky;
   ctx.fillRect(0, 0, WORLD_W, WORLD_H);
 
   // background buildings (parallax, derived from tick so it's cheap)
@@ -118,32 +110,34 @@ export function draw(ctx: CanvasRenderingContext2D, s: PigeonState, scale: numbe
   // HUD
   ctx.fillStyle = C.text;
   ctx.textAlign = "center";
-  ctx.font = "bold 48px system-ui, sans-serif";
+  ctx.font = "600 40px 'IBM Plex Mono', ui-monospace, monospace";
   ctx.fillText(String(s.score), WORLD_W / 2, 80);
-  ctx.font = "14px system-ui, sans-serif";
+  ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
   ctx.fillStyle = "rgba(248,249,250,0.6)";
   ctx.fillText(`best ${hud.best}`, WORLD_W / 2, 102);
   drawChase(ctx, hud, s.score, WORLD_W, "rgba(248,249,250,0.75)", "#FF8B2E");
 
   if (!hud.started && hud.firstRun) {
     ctx.fillStyle = C.text;
-    ctx.font = "bold 22px system-ui, sans-serif";
+    ctx.font = "700 18px Silkscreen, 'IBM Plex Mono', monospace";
     ctx.fillText("DRUNK PIGEON", WORLD_W / 2, 190);
-    ctx.font = "15px system-ui, sans-serif";
+    ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
     ctx.fillStyle = "rgba(248,249,250,0.8)";
     ctx.fillText("tap to flap. it gets worse.", WORLD_W / 2, 216);
   }
   if (s.dead) {
     ctx.fillStyle = "rgba(0,0,0,0.55)";
-    ctx.fillRect(40, 240, WORLD_W - 80, 140);
+    { const _l = DEATH_LINES[hud.seed % DEATH_LINES.length]!; ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
+      const _w = Math.min(WORLD_W - 16, Math.max(260, ctx.measureText(_l).width + 36));
+      ctx.fillRect((WORLD_W - _w) / 2, 240, _w, 140); }
     ctx.fillStyle = C.text;
-    ctx.font = "bold 24px system-ui, sans-serif";
+    ctx.font = "700 20px Silkscreen, 'IBM Plex Mono', monospace";
     ctx.fillText(DEATH_LINES[hud.seed % DEATH_LINES.length]!, WORLD_W / 2, 285);
-    ctx.font = "15px system-ui, sans-serif";
+    ctx.font = "13px 'IBM Plex Mono', ui-monospace, monospace";
     ctx.fillStyle = "rgba(248,249,250,0.8)";
-    ctx.fillText(`${s.score} gaps. tap to go again.`, WORLD_W / 2, 315);
-    if (hud.note) { ctx.font = "bold 14px system-ui, sans-serif"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 365); }
-    if (hud.sub) { ctx.font = "13px system-ui, sans-serif"; ctx.fillStyle = "rgba(248,249,250,0.75)"; ctx.fillText(hud.sub, WORLD_W / 2, 388); }
+    ctx.fillText(`${plural(s.score, "gap", "gaps")}. tap to go again.`, WORLD_W / 2, 315);
+    if (hud.note) { ctx.font = "600 13px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "#FF8B2E"; ctx.fillText(hud.note, WORLD_W / 2, 365); }
+    if (hud.sub) { ctx.font = "12px 'IBM Plex Mono', ui-monospace, monospace"; ctx.fillStyle = "rgba(248,249,250,0.75)"; ctx.fillText(hud.sub, WORLD_W / 2, 388); }
     ctx.fillText(`${(s.tick / 60).toFixed(1)}s of flying, ${s.gaps.length} buildings`, WORLD_W / 2, 340);
   }
 
