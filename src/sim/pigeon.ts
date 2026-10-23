@@ -38,8 +38,11 @@ export interface PigeonState {
 }
 
 const PIGEON_X = 90;
-const PIGEON_R = 14; // collision radius
+const PIGEON_R = 10; // collision radius (smaller than the drawn bird: forgiving on purpose)
 const GRAVITY = 0.34;
+/** Small flaps early: finer control while you are learning, bigger once you can
+ *  handle them. (Floatier early is WORSE: a big flap magnifies a late reaction.) */
+const flapAt = (score: number) => -(4.2 + Math.min(1.2, score * 0.1));
 const FLAP_VY = -5.4;
 const MAX_VY = 10;
 const COL_W = 52;
@@ -111,7 +114,7 @@ export const pigeonSim: Sim<PigeonState> = {
     if (s.dead) return;
     s.tick++;
 
-    if (tap) s.vy = FLAP_VY;
+    if (tap) s.vy = flapAt(s.score);
     s.vy = Math.min(MAX_VY, s.vy + GRAVITY);
     s.y += s.vy;
 
@@ -131,8 +134,11 @@ export const pigeonSim: Sim<PigeonState> = {
     }
     while (s.gaps.length && s.gaps[0]!.x + COL_W < -10) s.gaps.shift();
 
+    // The sky is a lid, not a wall: bonking the top costs you height, not the run.
+    // Only the ground and the buildings actually kill.
+    if (s.y - PIGEON_R < 0) { s.y = PIGEON_R; if (s.vy < 0) s.vy = 0; }
     const y = pigeonY(s);
-    if (y + PIGEON_R >= GROUND_Y || y - PIGEON_R <= 0) {
+    if (y + PIGEON_R >= GROUND_Y) {
       s.dead = true;
       return;
     }

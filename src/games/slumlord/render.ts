@@ -18,12 +18,13 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
   g.addColorStop(0, C.sky); g.addColorStop(1, C.sky2);
   ctx.fillStyle = g; ctx.fillRect(0, 0, SL_W, SL_H);
 
-  // camera: keep the top of the tower around y=300 once it's tall
-  const towerTop = SL_H - 60 - s.floors.length * FLOOR_H;
-  const cam = Math.max(0, 300 - towerTop);
+  // camera: always keep the floor you are actually aiming at in the middle of the screen,
+  // from the very first drop, not just once the tower is tall
+  const activeY = SL_H - 60 - (s.floors.length + 1) * FLOOR_H;
+  const cam = Math.max(0, 320 - activeY);
 
-  // ground
-  ctx.fillStyle = C.ground; ctx.fillRect(0, SL_H - 60 + cam, SL_W, 60);
+  // ground (filled all the way down so there is never a gap under it)
+  ctx.fillStyle = C.ground; ctx.fillRect(0, SL_H - 60 + cam, SL_W, SL_H + 400);
 
   const drawFloor = (x: number, w: number, y: number, v: number, perfect: boolean, moving: boolean) => {
     ctx.fillStyle = perfect ? C.brick : (moving ? C.brick : C.brick2);
@@ -39,11 +40,21 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
   s.floors.forEach((f, i) => drawFloor(f.x, f.w, SL_H - 60 - (i + 1) * FLOOR_H + cam, f.v, f.perfect, false));
   if (!s.dead) drawFloor(s.cur.x, s.cur.w, SL_H - 60 - (s.floors.length + 1) * FLOOR_H + cam, s.cur.v, false, true);
 
-  // inspector thumbs up on perfect streak
+  // perfect feedback. The width you win back is the whole point of the game,
+  // so say it out loud: a green sliver on the part you regained, plus the streak.
+  const topF = s.floors[s.floors.length - 1];
+  const below = s.floors[s.floors.length - 2];
+  if (topF && below && topF.perfect && topF.w > below.w && !s.dead) {
+    const y = SL_H - 60 - s.floors.length * FLOOR_H + cam;
+    ctx.fillStyle = C.ok;
+    ctx.fillRect(topF.x, y, (topF.w - below.w) / 2, FLOOR_H);
+    ctx.fillRect(topF.x + topF.w - (topF.w - below.w) / 2, y, (topF.w - below.w) / 2, FLOOR_H);
+  }
   if (s.perfectStreak > 0 && !s.dead) {
-    const ix = 20, iy = SL_H - 60 - (s.floors.length) * FLOOR_H + cam;
-    ctx.fillStyle = C.frame; ctx.fillRect(ix, iy - 26, 10, 18); ctx.fillStyle = "#e8b48f"; ctx.fillRect(ix + 1, iy - 34, 8, 8);
-    ctx.fillStyle = C.ok; ctx.font = "bold 12px system-ui"; ctx.textAlign = "left"; ctx.fillText(s.perfectStreak > 1 ? `perfect x${s.perfectStreak}` : "perfect", ix + 14, iy - 20);
+    const iy = SL_H - 60 - s.floors.length * FLOOR_H + cam;
+    ctx.fillStyle = C.ok; ctx.font = "bold 13px system-ui"; ctx.textAlign = "left";
+    const grew = topF && below && topF.w > below.w;
+    ctx.fillText(s.perfectStreak > 1 ? `perfect x${s.perfectStreak}${grew ? " · wider" : ""}` : (grew ? "perfect · wider" : "perfect"), 16, iy - 10);
   }
 
   // HUD
@@ -54,6 +65,7 @@ export function drawSlumlord(ctx: CanvasRenderingContext2D, s: SlumlordState, sc
   if (!hud.started) {
     ctx.fillStyle = C.text; ctx.font = "bold 22px system-ui, sans-serif"; ctx.fillText("SLUMLORD", SL_W / 2, 200);
     ctx.font = "15px system-ui, sans-serif"; ctx.fillStyle = "rgba(26,20,16,0.8)"; ctx.fillText("tap to drop the floor. overhang falls off.", SL_W / 2, 226);
+    ctx.fillStyle = C.ok; ctx.font = "bold 15px system-ui, sans-serif"; ctx.fillText("land it dead centre and you win width back.", SL_W / 2, 250);
   }
   if (s.dead) {
     ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(30, 200, SL_W - 60, 140);
